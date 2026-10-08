@@ -82,3 +82,9 @@ test('Turso settings pasted with spaces, quotes or a final slash still work', as
   assert.match(tursoConfig('postgres://x', 'x').problem, /invalid/);
   assert.match(tursoConfig('libsql://db.turso.io', '').problem, /TOKEN missing/);
 });
+
+test('a Turso URL that is really the token is reported as swapped', async () => {
+  const { tursoConfig } = await import('../src/config.js');
+  assert.match(tursoConfig('eyJhbGciOi.x.y', 'libsql://db.turso.io').problem, /swapped/);
+  assert.match(tursoConfig('TURSO_DATABASE_URL=libsql://db.turso.io', 'x').problem, /without the name/);
+});

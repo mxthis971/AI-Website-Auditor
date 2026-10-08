@@ -22,7 +22,14 @@ export function tursoConfig(rawUrl = '', rawToken = '') {
   const url = clean(rawUrl).replace(/\/+$/, '');
   const authToken = clean(rawToken).replace(/^Bearer\s+/i, '');
   if (!url) return { url: '', authToken: '', problem: 'TURSO_DATABASE_URL missing' };
-  if (!/^(libsql|https):\/\/[\w.-]+$/.test(url)) return { url: '', authToken: '', problem: 'TURSO_DATABASE_URL invalid (expected libsql://name.turso.io)' };
+  if (!/^(libsql|https):\/\/[\w.-]+$/.test(url)) {
+    // A hint about the shape of the value, never the value itself.
+    const hint = url.startsWith('eyJ') ? ': it looks like the token, the two values may be swapped'
+      : url.includes('=') ? ': paste only the value, without the name and "="'
+      : /\s/.test(url) ? ': it contains a space or line break'
+      : !/^(libsql|https):\/\//.test(url) ? ': it must start with libsql://' : '';
+    return { url: '', authToken: '', problem: `TURSO_DATABASE_URL invalid (expected libsql://name.turso.io)${hint}` };
+  }
   if (!authToken) return { url: '', authToken: '', problem: 'TURSO_AUTH_TOKEN missing' };
   return { url, authToken, problem: null };
 }
@@ -110,5 +117,9 @@ function deepMerge(base, extra) {
 
 export function paymentsEnabled(config) {
   const p = config.payments;
+  // Test keys (sk_test_) only work on a local machine: on the public site they
+  // would show a fake checkout to real visitors.
+  const local = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(config.publicBaseUrl || '');
+  if (p.stripeSecretKey.startsWith('sk_test_') && !local) return false;
   return Boolean(p.stripeSecretKey && p.stripeWebhookSecret && p.reportPriceId);
 }

@@ -147,3 +147,11 @@ test('Stripe webhook signature verification', () => {
   assert.equal(verifyWebhookSignature(body, old, 'whsec_test'), false, 'replayed old event');
   assert.equal(verifyWebhookSignature(body, undefined, 'whsec_test'), false);
 });
+
+test('Stripe test keys never enable payments on the public site', async () => {
+  const { paymentsEnabled } = await import('../src/config.js');
+  const payments = { stripeSecretKey: 'sk_test_x', stripeWebhookSecret: 'whsec_x', reportPriceId: 'price_x' };
+  assert.equal(paymentsEnabled({ publicBaseUrl: 'http://localhost:3000', payments }), true);
+  assert.equal(paymentsEnabled({ publicBaseUrl: 'https://auditeur-seo.fr', payments }), false);
+  assert.equal(paymentsEnabled({ publicBaseUrl: 'https://auditeur-seo.fr', payments: { ...payments, stripeSecretKey: 'sk_live_x' } }), true);
+});

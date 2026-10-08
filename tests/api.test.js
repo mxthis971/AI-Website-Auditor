@@ -333,3 +333,23 @@ test('rebranded as Auditeur SEO, no AI wording on public pages', async () => {
   }
   await app.close();
 });
+
+test('every page in the sitemap exists, with a French version linked by hreflang', async () => {
+  const app = await makeApp();
+  const urls = [...(await app.inject('/sitemap.xml')).body.matchAll(/<loc>http:\/\/localhost:3000([^<]+)<\/loc>/g)].map((m) => m[1]);
+  assert.ok(urls.length >= 30);
+  for (const url of urls) {
+    const res = await app.inject(url);
+    assert.equal(res.statusCode, 200, url);
+    const fr = url.startsWith('/fr/');
+    assert.match(res.body, new RegExp(`<html lang="${fr ? 'fr' : 'en'}">`), url);
+    assert.match(res.body, /hreflang="fr"/, url);
+  }
+  const tool = (await app.inject('/fr/outils/verificateur-balises-meta')).body;
+  assert.match(tool, /<h1>Vérificateur de balises meta gratuit<\/h1>/);
+  assert.match(tool, /<button type="submit">Vérifier<\/button>/);
+  assert.match(tool, /href="\/tools\/meta-tag-checker\?lang=en"/);
+  assert.equal((await app.inject('/fr/outils/inconnu')).statusCode, 404);
+  assert.match((await app.inject('/fr/nimporte-quoi')).body, /Page introuvable/);
+  await app.close();
+});

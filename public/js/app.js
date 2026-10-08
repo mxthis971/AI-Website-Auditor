@@ -362,14 +362,14 @@
         out.textContent = '';
         out.hidden = false;
         var issues = r.issues.map(function (i) {
-          return issueCard({ severity: i.severity, categoryLabel: i.severity, title: i.title, explanation: i.explanation, impact: i.impact, fix: i.fix, example: i.example, affected: i.affected, count: i.count });
+          return issueCard({ severity: i.severity, categoryLabel: (ui.severity && ui.severity[i.severity]) || i.severity, title: i.title, explanation: i.explanation, impact: i.impact, fix: i.fix, example: i.example, affected: i.affected, count: i.count });
         });
         append(out, [
           h('h2', { class: 'break', text: r.url }),
           issues.length ? h('section', { class: 'issues' }, issues) : h('p', { class: 'notice good-notice', text: '✓ ' + r.passed.length + ' / ' + r.passed.length }),
           h('details', { class: 'card passed', open: !issues.length }, h('summary', { text: ui.report.passed + ' (' + r.passed.length + ')' }), h('ul', { class: 'checklist' }, r.passed.map(function (p) { return h('li', { text: p.label }); }))),
           toolExtras(r),
-          h('div', { class: 'cta-box card' }, h('p', { text: 'Want the full picture? Run a complete audit of this site.' }), h('a', { class: 'button', href: '/', text: 'Full website audit' })),
+          h('div', { class: 'cta-box card' }, h('p', { text: ui.tool.resultCta }), h('a', { class: 'button', href: lang === 'fr' ? '/fr/' : '/', text: ui.tool.resultButton })),
         ]);
         out.scrollIntoView({ behavior: 'smooth' });
       })
@@ -381,19 +381,19 @@
     var hp = r.homepage;
     if (!hp) return null;
     if (data.showOutline) {
-      return h('section', { class: 'card' }, h('h3', { text: 'Heading outline' }), h('ul', { class: 'outline' }, hp.headings.map(function (x) {
-        return h('li', { class: 'lvl' + x.level }, h('span', { class: 'badge info', text: 'H' + x.level }), ' ', x.text || '(empty)');
+      return h('section', { class: 'card' }, h('h3', { text: ui.tool.outline }), h('ul', { class: 'outline' }, hp.headings.map(function (x) {
+        return h('li', { class: 'lvl' + x.level }, h('span', { class: 'badge info', text: 'H' + x.level }), ' ', x.text || ui.tool.empty);
       })));
     }
     if (data.showSocial) {
-      return h('section', { class: 'card' }, h('h3', { text: 'Share preview' }), h('div', { class: 'social-card' },
-        hp.og.image ? h('img', { src: hp.og.image, alt: '', loading: 'lazy' }) : h('div', { class: 'social-placeholder', text: 'No og:image' }),
-        h('div', { class: 'social-text' }, h('small', { class: 'muted', text: new URL(r.url).hostname }), h('strong', { text: hp.og.title || hp.title || '(no title)' }), h('p', { class: 'small', text: hp.og.description || hp.description || '' }))));
+      return h('section', { class: 'card' }, h('h3', { text: ui.tool.sharePreview }), h('div', { class: 'social-card' },
+        hp.og.image ? h('img', { src: hp.og.image, alt: '', loading: 'lazy' }) : h('div', { class: 'social-placeholder', text: ui.tool.noOgImage }),
+        h('div', { class: 'social-text' }, h('small', { class: 'muted', text: new URL(r.url).hostname }), h('strong', { text: hp.og.title || hp.title || ui.tool.noTitle }), h('p', { class: 'small', text: hp.og.description || hp.description || '' }))));
     }
     if (data.showImages) {
-      return h('section', { class: 'card' }, h('h3', { text: 'Images (' + hp.images.length + ')' }), h('div', { class: 'table-wrap' }, h('table', null,
-        h('thead', null, h('tr', null, h('th', { text: 'Image' }), h('th', { text: 'alt' }))),
-        h('tbody', null, hp.images.map(function (i) { return h('tr', null, h('td', { class: 'break', text: i.src || '(inline)' }), h('td', { class: i.alt === null ? 'bad' : '', text: i.alt === null ? 'missing' : i.alt === '' ? '(empty: decorative)' : i.alt })); })))));
+      return h('section', { class: 'card' }, h('h3', { text: ui.tool.images + ' (' + hp.images.length + ')' }), h('div', { class: 'table-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, h('th', { text: ui.tool.image }), h('th', { text: 'alt' }))),
+        h('tbody', null, hp.images.map(function (i) { return h('tr', null, h('td', { class: 'break', text: i.src || ui.tool.inline }), h('td', { class: i.alt === null ? 'bad' : '', text: i.alt === null ? ui.tool.altMissing : i.alt === '' ? ui.tool.altEmpty : i.alt })); })))));
     }
     return null;
   }

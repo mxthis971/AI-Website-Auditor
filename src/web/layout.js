@@ -66,9 +66,9 @@ ${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication
   <div class="container nav">
     <a class="logo" href="${home}">${LOGO}<span>${esc(t.brand)}</span></a>
     <nav aria-label="Main">
-      <a href="/tools/">${esc(t.nav.tools)}</a>
+      <a href="${lang === 'fr' ? '/fr/outils/' : '/tools/'}">${esc(t.nav.tools)}</a>
       <a href="${lang === 'fr' ? '/fr/tarifs' : '/pricing'}">${esc(t.nav.pricing)}</a>
-      <a href="/how-scoring-works">${esc(t.nav.scoring)}</a>
+      <a href="${lang === 'fr' ? '/fr/calcul-du-score' : '/how-scoring-works'}">${esc(t.nav.scoring)}</a>
       <span class="lang-switch" role="group" aria-label="Language">${['en', 'fr'].map((l) => (l === lang ? `<span aria-current="true">${l.toUpperCase()}</span>` : `<a href="${esc(switchPath(l))}?lang=${l}" hreflang="${l}" rel="nofollow">${l.toUpperCase()}</a>`)).join('')}</span>
     </nav>
   </div>
@@ -88,9 +88,9 @@ ${body}
 
 export function auditForm(t, { tool = null, compact = false } = {}) {
   return `<form class="audit-form${compact ? ' compact' : ''}" data-tool="${esc(tool || '')}" novalidate>
-  <label class="visually-hidden" for="url-input">Website URL</label>
+  <label class="visually-hidden" for="url-input">${esc(t.tool.urlLabel)}</label>
   <input id="url-input" name="url" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="${esc(t.hero.placeholder)}" required>
-  <button type="submit">${esc(tool ? 'Check' : t.hero.button)}</button>
+  <button type="submit">${esc(tool ? t.tool.check : t.hero.button)}</button>
   <p class="form-error" role="alert" hidden></p>
 </form>
 <div class="progress" hidden aria-live="polite"><div class="spinner" aria-hidden="true"></div><p class="progress-text"></p></div>`;

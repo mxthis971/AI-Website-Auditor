@@ -56,6 +56,17 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     : '';
   const csp = `default-src 'self'; img-src 'self' https: data:; style-src 'self'${ads ? " 'unsafe-inline'" : ''}; script-src 'self'${ads}; connect-src 'self'${ads}; frame-src${ads || " 'none'"}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com`;
 
+  // One public address for search engines: pages opened on the Render URL (*.onrender.com)
+  // are sent to the custom domain. API calls (health checks, webhooks) are left alone.
+  const canonicalHost = new URL(config.publicBaseUrl).hostname;
+  if (!canonicalHost.endsWith('.onrender.com') && canonicalHost !== 'localhost') {
+    app.addHook('onRequest', async (req, reply) => {
+      if (!req.hostname.endsWith('.onrender.com') || req.url.startsWith('/api/')) return;
+      if (req.method !== 'GET' && req.method !== 'HEAD') return;
+      return reply.redirect(config.publicBaseUrl + req.url, 301);
+    });
+  }
+
   app.addHook('onSend', async (req, reply, payload) => {
     reply.header('x-content-type-options', 'nosniff');
     reply.header('referrer-policy', 'strict-origin-when-cross-origin');

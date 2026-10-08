@@ -270,3 +270,14 @@ test('Search Console verification tag is on every page when configured', async (
   }
   await app.close();
 });
+
+test('pages on the Render URL redirect to the custom domain, API calls do not', async () => {
+  const app = await makeApp({ config: { publicBaseUrl: 'https://auditeur-seo.fr' } });
+  const onrender = { host: 'nig-seo-auditor.onrender.com' };
+  const page = await app.inject({ url: '/fr/?x=1', headers: onrender });
+  assert.equal(page.statusCode, 301);
+  assert.equal(page.headers.location, 'https://auditeur-seo.fr/fr/?x=1');
+  assert.equal((await app.inject({ url: '/api/health', headers: onrender })).statusCode, 200);
+  assert.equal((await app.inject({ url: '/', headers: { host: 'auditeur-seo.fr' } })).statusCode, 200);
+  await app.close();
+});

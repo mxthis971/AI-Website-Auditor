@@ -119,8 +119,13 @@ test('with payments enabled: free view is gated, payment unlocks the full report
 
   const claim = (await app.inject({ method: 'POST', url: `/api/reports/${id}/claim`, payload: { sessionId: 'cs_test_123' } })).json();
   assert.ok(claim.accessKey);
+  // Payment starts the deep crawl of the same report.
+  assert.equal((await app.inject(`/api/audits/${id}`)).json().status === 'done', false);
+  await app.queue.idle();
   const full = (await app.inject(`/api/reports/${id}?key=${encodeURIComponent(claim.accessKey)}`)).json();
   assert.equal(full.full, true);
+  assert.equal(full.deep, true);
+  assert.equal(full.recheck.available, true);
   assert.equal(full.lockedCount, 0);
   assert.equal((await app.inject(`/api/reports/${id}?key=wrong`)).json().full, false);
   await app.close();
@@ -381,4 +386,62 @@ test('without a preview token, the secret link does not exist', async () => {
   const app = await makeApp({ config: { publicBaseUrl: 'https://auditeur-seo.fr', ...paymentConfig } });
   assert.equal((await app.inject('/stripe-test?token=anything-abcdefghijklmnopq')).statusCode, 404);
   await app.close();
+});
+
+test('paid report: deep crawl, then re-checks compared with the previous run', async () => {
+  let paidId;
+  const fetchImpl = async (url) => {
+    if (String(url).includes('/checkout/sessions/cs_paid')) return { ok: true, json: async () => ({ id: 'cs_paid', payment_status: 'paid', metadata: { report_id: paidId } }) };
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+  const app = await makeApp({ config: { ...paymentConfig, deepCrawler: { maxPages: 8 }, recheck: { days: 30, max: 2 } }, fetchImpl });
+  const { id } = await runAuditViaApi(app);
+  paidId = id;
+  const before = (await app.inject(`/api/reports/${id}`)).json();
+  assert.equal(before.deep, false);
+
+  const { accessKey } = (await app.inject({ method: 'POST', url: `/api/reports/${id}/claim`, payload: { sessionId: 'cs_paid' } })).json();
+  await app.queue.idle();
+  const deep = (await app.inject(`/api/reports/${id}?key=${accessKey}`)).json();
+  assert.equal(deep.deep, true);
+  assert.ok(deep.stats.pagesCrawled > before.stats.pagesCrawled, 'deep crawl explores more pages');
+  assert.deepEqual([deep.recheck.available, deep.recheck.remaining], [true, 2]);
+  assert.equal(deep.comparison, null);
+
+  // Wrong key: no re-check.
+  assert.equal((await app.inject({ method: 'POST', url: `/api/reports/${id}/recheck`, payload: { key: 'nope' } })).statusCode, 403);
+
+  const r1 = await app.inject({ method: 'POST', url: `/api/reports/${id}/recheck`, payload: { key: accessKey, lang: 'fr' } });
+  assert.equal(r1.statusCode, 202);
+  await app.queue.idle();
+  const second = (await app.inject(`/api/reports/${r1.json().id}?key=${accessKey}&lang=fr`)).json();
+  assert.equal(second.full, true, 'the same access key opens the re-check');
+  assert.equal(second.comparison.previousId, id);
+  assert.equal(second.comparison.score.before, deep.score.overall);
+  assert.ok(Array.isArray(second.comparison.fixed) && Array.isArray(second.comparison.added));
+  assert.equal(second.recheck.remaining, 1);
+
+  // A re-check from the re-check counts against the same purchase.
+  assert.equal((await app.inject({ method: 'POST', url: `/api/reports/${r1.json().id}/recheck`, payload: { key: accessKey } })).statusCode, 202);
+  await app.queue.idle();
+  assert.equal((await app.inject({ method: 'POST', url: `/api/reports/${id}/recheck`, payload: { key: accessKey } })).json().error.code, 'no_recheck_left');
+  await app.close();
+});
+
+test('a failed deep crawl keeps the results the buyer already has', async () => {
+  const store = new Store(':memory:');
+  const { id } = await store.createReport({ url: 'https://example.com/', lang: 'en' });
+  await store.saveResult(id, { durationMs: 1, stats: { pagesCrawled: 3 }, score: { overall: 70 } });
+  await store.markPaid(id, 'cs_x');
+  assert.equal(await store.startDeep(id), true);
+  assert.equal(await store.startDeep(id), false, 'only one deep crawl per payment');
+  await store.setStatus(id, 'running', {});
+  assert.equal(await store.restoreDone(id), true);
+  assert.equal((await store.getReport(id)).status, 'done');
+  // Same after a restart in the middle of a deep crawl.
+  await store.setStatus(id, 'running', {});
+  await store.failStaleJobs();
+  const r = await store.getReport(id);
+  assert.equal(r.status, 'done');
+  assert.equal(r.data.score.overall, 70);
 });

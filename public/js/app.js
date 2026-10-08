@@ -233,7 +233,10 @@
     append(reportRoot, [
       header,
       r.partial ? h('p', { class: 'notice', text: ui.report.partial }) : null,
+      r.deep && r.full ? h('p', { class: 'notice good-notice', text: ui.report.deep.replace('{n}', r.stats.pagesCrawled) }) : null,
       h('div', { class: 'score-panel card' }, scoreRing(r.score.overall, r.score.grade), h('div', { class: 'score-side' }, h('p', { class: 'eyebrow', text: ui.report.yourScore }), categories)),
+      comparisonSection(r),
+      recheckBox(id, r, key),
       stats,
       adUnit(data.ads && data.ads.reportSlot),
       h('section', { class: 'card' }, h('h2', { class: 'h3', text: ui.report.summary }), h('p', { text: r.summary })),
@@ -266,6 +269,53 @@
       h('p', { class: 'center muted small', text: ui.report.generatedBy }),
     ]);
     activateAds(reportRoot);
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { dateStyle: 'medium' });
+  }
+
+  // Paid re-check: before/after against the previous run.
+  function comparisonSection(r) {
+    var c = r.comparison;
+    if (!c) return null;
+    var d = c.score.delta;
+    function list(title, items, cls) {
+      if (!items.length) return null;
+      return h('div', { class: 'compare-list' }, h('h3', { class: 'h4' }, h('span', { class: 'dot ' + cls }), title + ' (' + items.length + ')'),
+        h('ul', null, items.map(function (i) { return h('li', { text: i.title }); })));
+    }
+    return h('section', { class: 'card compare' },
+      h('h2', { class: 'h3', text: ui.report.compareTitle.replace('{date}', new Date(c.previousCreatedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })) }),
+      h('p', { class: 'compare-score' }, h('span', { class: 'muted', text: c.score.before + ' → ' }), h('strong', { class: scoreClass(c.score.after), text: c.score.after + '/100' }),
+        h('span', { class: 'delta ' + (d > 0 ? 'good' : d < 0 ? 'bad' : ''), text: d === 0 ? ' (=)' : ' (' + (d > 0 ? '+' : '') + d + ')' })),
+      h('div', { class: 'compare-cats' }, c.categories.map(function (cat) {
+        var cd = (cat.after || 0) - (cat.before || 0);
+        return h('span', { class: 'compare-cat' }, cat.label + ' ', h('strong', { class: cd > 0 ? 'good' : cd < 0 ? 'bad' : '', text: cat.before + ' → ' + cat.after }));
+      })),
+      !c.fixed.length && !c.added.length ? h('p', { class: 'muted', text: ui.report.noChange }) : null,
+      list(ui.report.fixed, c.fixed, 'pass'),
+      list(ui.report.added, c.added, 'critical'),
+      h('p', { class: 'muted small' }, ui.report.remaining.replace('{n}', c.remaining), ' · ', h('a', { href: '/r/' + c.previousId + (lang === 'fr' ? '?lang=fr' : ''), text: ui.report.previous })));
+  }
+
+  function recheckBox(id, r, key) {
+    if (!r.recheck || !r.recheck.available || !key) return null;
+    var button;
+    var box = h('section', { class: 'card cta-box no-print' }, h('h2', { class: 'h3', text: ui.report.recheckTitle }),
+      h('p', { text: ui.report.recheckText.replace('{n}', r.recheck.remaining).replace('{date}', fmtDate(r.recheck.until)) }));
+    button = h('button', { class: 'button', text: ui.report.recheckButton, onclick: function () {
+      button.disabled = true;
+      api('POST', '/api/reports/' + id + '/recheck', { key: key, lang: lang })
+        .then(function (res) {
+          store('owner:' + res.id, res.ownerKey);
+          store('access:' + res.id, key);
+          window.location.href = res.reportUrl + (lang === 'fr' ? '?lang=fr' : '');
+        })
+        .catch(function (err) { button.disabled = false; append(box, h('p', { class: 'form-error', text: err.message })); });
+    } });
+    append(box, button);
+    return box;
   }
 
   function stat(value, label) { return h('div', { class: 'stat card' }, h('strong', { text: String(value) }), h('span', { class: 'muted small', text: label })); }

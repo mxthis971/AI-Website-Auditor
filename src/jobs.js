@@ -26,8 +26,9 @@ export class AuditQueue {
     return this.waiting.length >= this.config.limits.maxQueuedAudits;
   }
 
-  enqueue(id, url) {
-    this.waiting.push({ id, url });
+  /** deep: crawl with the paid limits; a failure then keeps the existing results. */
+  enqueue(id, url, { deep = false } = {}) {
+    this.waiting.push({ id, url, deep });
     this.#save(this.store.setStatus(id, 'queued', { phase: 'queued', position: this.waiting.length }));
     this.#pump();
   }
@@ -44,12 +45,12 @@ export class AuditQueue {
     }
   }
 
-  async #run({ id, url }) {
+  async #run({ id, url, deep }) {
     const started = Date.now();
     await this.store.setStatus(id, 'running', { phase: 'starting', pagesCrawled: 0 }).catch((err) => this.log?.warn({ auditId: id, err: err.message }, 'status not saved'));
     try {
       const report = await this.runner(url, {
-        config: this.config,
+        config: deep ? { ...this.config, crawler: { ...this.config.crawler, ...this.config.deepCrawler } } : this.config,
         resolver: this.resolver,
         log: this.log,
         onProgress: (p) => this.#save(this.store.setStatus(id, 'running', p)),
@@ -58,6 +59,10 @@ export class AuditQueue {
       this.log?.info({ auditId: id, durationMs: report.durationMs, pages: report.stats.pagesCrawled, score: report.score.overall }, 'audit done');
     } catch (err) {
       const error = friendlyError(err);
+      if (deep && (await this.store.restoreDone(id).catch(() => false))) {
+        this.log?.warn({ auditId: id, code: error.code }, 'deep crawl failed, previous results kept');
+        return;
+      }
       if (error.code === 'internal_error') this.log?.error({ auditId: id, err: err.stack }, 'audit crashed');
       else this.log?.info({ auditId: id, code: error.code }, 'audit failed');
       await this.store.saveError(id, error, Date.now() - started).catch((e) => this.log?.error({ auditId: id, err: e.message }, 'error not saved'));

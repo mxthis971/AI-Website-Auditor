@@ -13,6 +13,7 @@ import { Store, safeEqualHash, hashKey } from './storage/db.js';
 import { AuditQueue } from './jobs.js';
 import { parseAuditUrl, UnsafeUrlError } from './security/url-guard.js';
 import { buildView } from './report/view.js';
+import { compareReports } from './report/compare.js';
 import { runAudit } from './audit.js';
 import { friendlyError } from './crawler/crawler.js';
 import { createAiClient, generateAiSummary } from './ai/summary.js';
@@ -144,7 +145,63 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     const lang = req.query.lang === 'fr' ? 'fr' : req.query.lang === 'en' ? 'en' : report.lang;
     const full = hasFullAccess(req, report, req.query.key || req.headers['x-access-key']);
     const aiForLang = report.ai?.[lang] || null;
-    return { id: report.id, paymentsEnabled: paysFor(req), aiEnabled: Boolean(ai), ...buildView(report.data, { lang, full, ai: aiForLang }) };
+    const paid = paysFor(req) && report.paid && full;
+    return {
+      id: report.id,
+      paymentsEnabled: paysFor(req),
+      aiEnabled: Boolean(ai),
+      deep: report.deep,
+      ...buildView(report.data, { lang, full, ai: aiForLang }),
+      comparison: paid ? await comparisonFor(report, lang) : null,
+      recheck: paid ? await recheckInfo(report) : null,
+    };
+  });
+
+  // ------------------------------------------------------- Paid extras
+  // After payment the report is crawled again with the deep limits, and the
+  // buyer can re-check the site for a while, each time compared with the last run.
+  const startDeepCrawl = async (report) => {
+    if (await store.startDeep(report.id)) {
+      queue.enqueue(report.id, report.url, { deep: true });
+      count('deep_crawls');
+    }
+  };
+  const recheckRoot = async (report) => (report.rootId ? await store.getReport(report.rootId) : report);
+  const recheckInfo = async (report) => {
+    const root = await recheckRoot(report);
+    if (!root?.paidAt) return null;
+    const until = root.paidAt + config.recheck.days * 86_400_000;
+    const remaining = Math.max(0, config.recheck.max - root.rechecks);
+    return { available: Date.now() < until && remaining > 0, remaining, until: new Date(until).toISOString() };
+  };
+  const comparisonFor = async (report, lang) => {
+    if (!report.prevId) return null;
+    const prev = await store.getReport(report.prevId);
+    return prev?.status === 'done' && prev.data ? compareReports(prev.data, report.data, { lang, previousId: prev.id }) : null;
+  };
+
+  app.post('/api/reports/:id/recheck', { config: { rateLimit: { max: 10, timeWindow: '1 hour' } } }, async (req, reply) => {
+    const report = await loadReport(req, reply);
+    if (!report) return;
+    if (!paysFor(req) || !report.paid || !safeEqualHash(req.body?.key, report.accessKeyHash)) {
+      return reply.code(403).send({ error: { code: 'forbidden', message: 'Re-checks are part of the full report.' } });
+    }
+    const info = await recheckInfo(report);
+    if (!info?.available) return reply.code(403).send({ error: { code: 'no_recheck_left', message: 'No re-check left for this report.' } });
+    if (queue.isFull()) return reply.code(503).send({ error: { code: 'busy', message: 'Too many audits are running right now. Please try again in a minute.' } });
+    const root = await recheckRoot(report);
+    if (!(await store.useRecheck(root.id, config.recheck.max))) return reply.code(403).send({ error: { code: 'no_recheck_left', message: 'No re-check left for this report.' } });
+    const { id, ownerKey } = await store.createRecheck({
+      url: report.url,
+      lang: req.body?.lang === 'fr' ? 'fr' : report.lang,
+      rootId: root.id,
+      prevId: report.id,
+      accessKeyHash: report.accessKeyHash,
+      paidAt: root.paidAt,
+    });
+    queue.enqueue(id, report.url, { deep: true });
+    count('rechecks');
+    return reply.code(202).send({ id, ownerKey, reportUrl: `/r/${id}` });
   });
 
   app.post('/api/reports/:id/ai-summary', { config: { rateLimit: { max: 5, timeWindow: '1 hour' } } }, async (req, reply) => {
@@ -223,6 +280,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
       return reply.code(402).send({ error: { code: 'not_paid', message: 'This payment is not completed for this report.' } });
     }
     const accessKey = await store.markPaid(report.id, session.id);
+    await startDeepCrawl(report);
     return { accessKey };
   });
 
@@ -238,7 +296,10 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
       if (event.type === 'checkout.session.completed' && event.data?.object?.payment_status === 'paid') {
         const reportId = event.data.object.metadata?.report_id;
         const report = reportId && ID_RE.test(reportId) ? await store.getReport(reportId) : null;
-        if (report && !report.paid) await store.markPaid(report.id, event.data.object.id);
+        if (report && !report.paid) {
+          await store.markPaid(report.id, event.data.object.id);
+          await startDeepCrawl(report);
+        }
         count('payments_completed');
         req.log.info({ reportId }, 'payment completed');
       }

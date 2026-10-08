@@ -75,6 +75,19 @@ export function loadConfig(overrides = {}) {
       allowPrivateNetworks: bool('ALLOW_PRIVATE_NETWORKS', false),
     },
 
+    // Paid reports: deeper crawl after payment, and re-checks with a before/after comparison.
+    deepCrawler: {
+      maxPages: int('DEEP_CRAWL_MAX_PAGES', 200),
+      maxDepth: int('DEEP_CRAWL_MAX_DEPTH', 5),
+      auditTimeoutMs: int('DEEP_AUDIT_TIMEOUT_MS', 300_000),
+      maxLinksToCheck: int('DEEP_CRAWL_MAX_LINKS_TO_CHECK', 300),
+      maxAssetsToCheck: int('DEEP_CRAWL_MAX_ASSETS_TO_CHECK', 60),
+    },
+    recheck: {
+      days: int('RECHECK_DAYS', 30),
+      max: int('RECHECK_MAX', 10),
+    },
+
     limits: {
       auditsPerIpPerHour: int('RATE_LIMIT_AUDITS_PER_HOUR', 10),
       maxConcurrentAudits: int('MAX_CONCURRENT_AUDITS', 2),

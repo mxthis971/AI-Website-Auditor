@@ -200,9 +200,9 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
         name: fr ? 'Rapport complet' : 'Full report',
         price: fr ? '7,90 € une fois' : '€7.90 one-time',
         items: fr
-          ? ['Tous les problèmes expliqués, avec URL concernées', 'Exemples de correction', 'Plan d’action personnalisé', 'Plan d’action prioritaire complet', 'Export PDF']
-          : ['Every issue explained, with affected URLs', 'Fix examples', 'Personalised action plan', 'Full priority roadmap', 'PDF export'],
-        cta: payments ? `<p class="muted small">${fr ? 'Disponible depuis chaque rapport.' : 'Available from any report.'}</p>` : `<p class="muted small">${fr ? 'Gratuit pendant la bêta : le rapport complet est offert.' : 'Free during beta: full reports are unlocked for everyone.'}</p>`,
+          ? ['Tous les problèmes expliqués, avec URL concernées', 'Exemples de correction', `Analyse approfondie jusqu’à ${config.deepCrawler.maxPages} pages`, `Re-vérifications pendant ${config.recheck.days} jours, avec comparaison avant/après`, 'Plan d’action prioritaire complet', 'Export PDF']
+          : ['Every issue explained, with affected URLs', 'Fix examples', `Deep crawl of up to ${config.deepCrawler.maxPages} pages`, `${config.recheck.days} days of re-checks with a before/after comparison`, 'Full priority roadmap', 'PDF export'],
+        cta: payments ? `<p class="muted small">${fr ? 'Disponible depuis chaque rapport.' : 'Available from any report.'}</p>` : `<p class="muted small">${fr ? 'Gratuit pendant la bêta : toutes les explications sont offertes. Analyse approfondie et re-vérifications : à l’ouverture des ventes.' : 'Free during beta: every explanation is unlocked. Deep crawl and re-checks: when sales open.'}</p>`,
       },
       {
         name: 'Pro monitoring',

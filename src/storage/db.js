@@ -51,6 +51,32 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL DEFAULT 0);
 `;
 
+// Columns added after the first release. SQLite has no "ADD COLUMN IF NOT
+// EXISTS": adding an existing column fails with "duplicate column", ignored.
+//   deep      1 = crawled with the paid (deep) limits
+//   paid_at   when the payment was confirmed (starts the re-check period)
+//   root_id   for a re-check: the paid report that grants it
+//   prev_id   for a re-check: the report it is compared with
+//   rechecks  on a paid report: re-checks already used
+const MIGRATIONS = [
+  'ALTER TABLE reports ADD COLUMN deep INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE reports ADD COLUMN paid_at INTEGER',
+  'ALTER TABLE reports ADD COLUMN root_id TEXT',
+  'ALTER TABLE reports ADD COLUMN prev_id TEXT',
+  'ALTER TABLE reports ADD COLUMN rechecks INTEGER NOT NULL DEFAULT 0',
+];
+
+async function migrate(driver) {
+  await driver.exec(SCHEMA);
+  for (const sql of MIGRATIONS) {
+    try {
+      await driver.exec(sql);
+    } catch (err) {
+      if (!/duplicate column/i.test(err.message)) throw err;
+    }
+  }
+}
+
 export class Store {
   /**
    * @param {string} file SQLite file path (or ':memory:'), used when no Turso URL is given
@@ -59,7 +85,7 @@ export class Store {
   constructor(file, turso = {}) {
     this.driver = turso.url ? new TursoDriver(turso.url, turso.authToken, turso.fetchImpl) : new SqliteDriver(file);
     this.kind = turso.url ? 'turso' : 'sqlite';
-    this.ready = this.driver.exec(SCHEMA);
+    this.ready = migrate(this.driver);
     // Live progress of running audits stays in memory: it changes every second
     // and is worthless after a restart, so it is not worth a database write.
     this.live = new Map();
@@ -104,6 +130,11 @@ export class Store {
       ownerKeyHash: row.owner_key_hash,
       accessKeyHash: row.access_key_hash,
       paid: Boolean(row.paid),
+      paidAt: row.paid_at ?? null,
+      deep: Boolean(row.deep),
+      rootId: row.root_id ?? null,
+      prevId: row.prev_id ?? null,
+      rechecks: Number(row.rechecks) || 0,
       stripeSession: row.stripe_session,
       createdAt: row.created_at,
     };
@@ -134,8 +165,38 @@ export class Store {
   /** Marks a report as paid and returns a fresh access key (only its hash is stored). */
   async markPaid(id, stripeSession) {
     const accessKey = randomKey();
-    const res = await this.#write('UPDATE reports SET paid = 1, access_key_hash = ?, stripe_session = ?, updated_at = ? WHERE id = ?', [hashKey(accessKey), stripeSession, Date.now(), id]);
+    const now = Date.now();
+    const res = await this.#write('UPDATE reports SET paid = 1, paid_at = COALESCE(paid_at, ?), access_key_hash = ?, stripe_session = ?, updated_at = ? WHERE id = ?', [now, hashKey(accessKey), stripeSession, now, id]);
     return res.changes ? accessKey : null;
+  }
+
+  /** Flags a paid report for its deep crawl. True only for the first caller (webhook and claim may race). */
+  async startDeep(id) {
+    return (await this.#write('UPDATE reports SET deep = 1, updated_at = ? WHERE id = ? AND paid = 1 AND deep = 0', [Date.now(), id])).changes > 0;
+  }
+
+  /** Uses one re-check of a paid report. False when none is left. */
+  async useRecheck(rootId, max) {
+    return (await this.#write('UPDATE reports SET rechecks = rechecks + 1, updated_at = ? WHERE id = ? AND paid = 1 AND rechecks < ?', [Date.now(), rootId, max])).changes > 0;
+  }
+
+  /** A re-check report: paid and deep from the start, opened with the same access key as its root. */
+  async createRecheck({ url, lang, rootId, prevId, accessKeyHash, paidAt }) {
+    const id = randomId();
+    const ownerKey = randomKey();
+    const now = Date.now();
+    await this.#write(
+      'INSERT INTO reports (id, url, lang, status, owner_key_hash, access_key_hash, paid, paid_at, deep, root_id, prev_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 1, ?, ?, ?, ?)',
+      [id, url, lang, 'queued', hashKey(ownerKey), accessKeyHash, paidAt, rootId, prevId, now, now],
+    );
+    return { id, ownerKey };
+  }
+
+  /** A deep crawl that failed keeps the report it was improving. False when there was nothing to keep. */
+  async restoreDone(id) {
+    const res = await this.#write("UPDATE reports SET status = 'done', progress = NULL, updated_at = ? WHERE id = ? AND data IS NOT NULL", [Date.now(), id]);
+    if (res.changes) this.live.delete(id);
+    return res.changes > 0;
   }
 
   async deleteReport(id) {
@@ -151,7 +212,8 @@ export class Store {
   /** Jobs interrupted by a restart are marked failed so clients stop waiting. */
   async failStaleJobs() {
     const error = JSON.stringify({ code: 'interrupted', message: 'The audit was interrupted by a server restart. Please run it again.' });
-    return (await this.#write("UPDATE reports SET status = 'failed', error = ?, updated_at = ? WHERE status IN ('queued', 'running')", [error, Date.now()])).changes;
+    // A report that already has results (deep crawl after payment) goes back to them.
+    return (await this.#write("UPDATE reports SET status = CASE WHEN data IS NULL THEN 'failed' ELSE 'done' END, error = CASE WHEN data IS NULL THEN ? ELSE error END, updated_at = ? WHERE status IN ('queued', 'running')", [error, Date.now()])).changes;
   }
 
   async increment(name, by = 1) {

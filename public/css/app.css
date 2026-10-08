@@ -225,3 +225,11 @@ th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; colo
 /* No empty box when Google has no ad to show. */
 .ad-slot:has(ins[data-ad-status="unfilled"]) { display: none; }
 @media print { .ad-slot { display: none; } }
+
+/* Re-check comparison (paid reports) */
+.compare-score { font-size: 1.5rem; margin: 8px 0 12px; }
+.compare-score .delta { font-size: 1rem; font-weight: 600; }
+.compare-cats { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 12px; font-size: .9rem; }
+.compare-cat strong { font-family: var(--mono); }
+.compare-list ul { margin: 4px 0 12px; padding-left: 20px; }
+.compare-list .dot { margin-right: 8px; }

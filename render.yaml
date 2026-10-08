@@ -1,0 +1,27 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Free web service. Secrets (API keys) are set in the Render dashboard,
+# never in this file.
+services:
+  - type: web
+    name: ai-website-auditor
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: METRICS_TOKEN
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: claude-opus-5-5
+      - key: PAGESPEED_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_REPORT_PRICE_ID
+        sync: false

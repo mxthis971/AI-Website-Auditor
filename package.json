@@ -1,0 +1,30 @@
+{
+  "name": "ai-website-auditor",
+  "version": "0.1.0",
+  "description": "Your automated website technical analyst: crawl a site, run deterministic SEO/performance/accessibility/technical checks, score it and explain the fixes.",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 'tests/*.test.js'",
+    "lint": "eslint .",
+    "audit:cli": "node --disable-warning=ExperimentalWarning scripts/audit-cli.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^10.1.5",
+    "cheerio": "^1.2.0",
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0"
+  }
+}

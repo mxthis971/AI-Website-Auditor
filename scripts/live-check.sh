@@ -33,7 +33,7 @@ if [ "${1:-}" = deployed ]; then
   done
   echo "$st"
   curl -sS -o /dev/null -w "report page /r/$id -> %{http_code}\n" "$BASE_URL/r/$id"
-  curl -sS -m 30 "$BASE_URL/api/reports/$id?lang=fr" | jq -c '{score: .score.overall, issues: (.issues | length)}'
+  curl -sS -m 30 "$BASE_URL/api/reports/$id?lang=fr" | jq -c '{score: .score.overall, issues: (.issues | length), fixesCount, deep}'
   exit 0
 fi
 

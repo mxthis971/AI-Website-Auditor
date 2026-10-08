@@ -281,3 +281,16 @@ test('pages on the Render URL redirect to the custom domain, API calls do not', 
   assert.equal((await app.inject({ url: '/', headers: { host: 'auditeur-seo.fr' } })).statusCode, 200);
   await app.close();
 });
+
+test('legal pages name the publisher and host, with no placeholder left', async () => {
+  const app = await makeApp({ config: { contactEmail: 'contact@auditeur-seo.fr' } });
+  const fr = (await app.inject('/fr/mentions-legales')).body;
+  assert.match(fr, /Mathis Nigard/);
+  assert.match(fr, /Render Networks, 525 3rd St/);
+  assert.match(fr, /mailto:contact@auditeur-seo\.fr/);
+  for (const url of ['/legal', '/fr/mentions-legales', '/privacy', '/fr/confidentialite', '/terms', '/fr/conditions']) {
+    const main = (await app.inject(url)).body.split('<main')[1] ?? '';
+    assert.doesNotMatch(main, /\[[^\]]*\]|Brouillon|Draft:/, url);
+  }
+  await app.close();
+});

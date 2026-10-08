@@ -17,7 +17,7 @@ Steps:
 1. Create an account at https://render.com (sign in with GitHub).
 2. **New → Blueprint**, pick the `AI-Website-Auditor` repository. Render reads `render.yaml`.
 3. Fill the asked variables:
-   - `PUBLIC_BASE_URL` = the URL Render gives you (e.g. `https://ai-website-auditor.onrender.com`), without trailing slash.
+   - `PUBLIC_BASE_URL` = the URL Render gives you (e.g. `https://auditeur-seo.fr` once a custom domain is connected, otherwise the `https://<name>.onrender.com` URL), without trailing slash.
    - leave the optional keys empty for now.
 4. Deploy. Check `https://<your-url>/api/health` returns `{"ok":true}`.
 5. Run an audit on a site you own.

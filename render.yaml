@@ -35,3 +35,5 @@ services:
         sync: false
       - key: GOOGLE_SITE_VERIFICATION
         value: fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA
+      - key: CONTACT_EMAIL
+        value: contact@auditeur-seo.fr

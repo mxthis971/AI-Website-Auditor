@@ -36,7 +36,7 @@ Pro monitoring (subscription)   ← V1.3
 | --- | --- | --- |
 | Hosting | €0 (Render free) | ~$7/month (Starter + disk) then ~$25/month for more RAM/instances |
 | Database | €0 (SQLite) | €0–19/month (Neon/Supabase/Turso free → paid tiers) |
-| Domain | €0 (onrender.com subdomain) | ~€10/year for a .com |
+| Domain | auditeur-seo.fr (Infomaniak) | ~€10/year |
 | PageSpeed API | €0 (free quota) | €0 (quota is generous; cache results) |
 | AI (optional) | €0 (off) | Pay per use. Cost depends on the model (`AI_MODEL`): the default `claude-opus-5-5` costs $4 / $20 per million input/output tokens; a summary is roughly 3–5k input + 1–2k output tokens. Generated only on demand for full reports and cached. Choose a cheaper model and set a spend limit in the Anthropic console if needed. |
 | Stripe | €0 fixed | ~1.5% + €0.25 per EU card payment |

@@ -34,6 +34,7 @@ export function loadConfig(overrides = {}) {
     },
     // Google Search Console ownership token (public value, shown in a <meta> tag).
     googleSiteVerification: /^[\w-]{20,100}$/.test(process.env.GOOGLE_SITE_VERIFICATION || '') ? process.env.GOOGLE_SITE_VERIFICATION : '',
+    contactEmail: /^[^\s@<>"]+@[^\s@<>"]+\.[a-z]{2,}$/i.test(process.env.CONTACT_EMAIL || '') ? process.env.CONTACT_EMAIL : '',
 
     crawler: {
       userAgent:

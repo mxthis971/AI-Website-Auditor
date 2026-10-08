@@ -7,8 +7,17 @@ import { layout, auditForm, esc } from './layout.js';
 import { CATEGORY_WEIGHTS, PENALTY } from '../analyzer/scoring.js';
 import { CATALOG, describe } from '../analyzer/catalog.js';
 import { legalPages } from './legal.js';
+import { homepageLang, langFromCookie, setLangCookie } from './lang.js';
 
 const ID_RE = /^[A-Za-z0-9]{8,32}$/;
+
+// Minimal 24px line icons for the three steps (crawl, measure, explain).
+const icon = (d) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const STEP_ICONS = [
+  icon('<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.2 7.2l2.6 8.6M15.8 7.2l-2.6 8.6M8.5 6h7"/>'),
+  icon('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  icon('<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>'),
+];
 
 export async function registerPages(app, { config, store, payments }) {
   const html = (reply, content, code = 200) => reply.code(code).type('text/html; charset=utf-8').send(content);
@@ -20,6 +29,7 @@ export async function registerPages(app, { config, store, payments }) {
 
   const homePage = (lang) => {
     const t = UI[lang];
+    const fill = (str) => str.replace(/\{pages\}/g, config.crawler.maxPages).replace('{depth}', config.crawler.maxDepth).replace('{checks}', Object.keys(CATALOG).length);
     const body = `
 <section class="hero">
   <div class="container narrow center">
@@ -27,13 +37,14 @@ export async function registerPages(app, { config, store, payments }) {
     <h1>${esc(t.hero.title)}</h1>
     <p class="lead">${esc(t.hero.subtitle)}</p>
     ${auditForm(t)}
-    <p class="muted small">${esc(t.hero.note)}</p>
+    <ul class="specs" aria-label="${esc(t.howTitle)}">${t.specs.map((x) => `<li>${esc(fill(x))}</li>`).join('')}</ul>
   </div>
 </section>
 <section id="report" class="container" hidden></section>
 <section class="container how" id="how">
-  <div class="cards three">
-    ${t.how.map(([h, p]) => `<div class="card"><h2 class="h3">${esc(h)}</h2><p>${esc(p.replace('{pages}', config.crawler.maxPages))}</p></div>`).join('')}
+  <h2 class="section-label">${esc(t.howTitle)}</h2>
+  <div class="steps">
+    ${t.how.map(([h, p, m], i) => `<div class="step"><div class="step-head"><span class="step-icon" aria-hidden="true">${STEP_ICONS[i]}</span><span class="step-num">0${i + 1}</span></div><h3>${esc(h)}</h3><p>${esc(fill(p))}</p><p class="step-metric">${esc(fill(m))}</p></div>`).join('')}
   </div>
 </section>
 <section class="container narrow">
@@ -45,14 +56,14 @@ export async function registerPages(app, { config, store, payments }) {
       config,
       lang,
       path: lang === 'fr' ? '/fr/' : '/',
-      title: lang === 'fr' ? 'AI Website Auditor : audit SEO et technique gratuit de votre site' : 'AI Website Auditor: Free SEO & Technical Website Audit',
+      title: lang === 'fr' ? 'Auditeur SEO : audit SEO technique gratuit de votre site' : 'Auditeur SEO: Free Technical SEO Website Audit',
       description: t.hero.subtitle,
       alternates: homeAlternates,
       body,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
-        name: 'AI Website Auditor',
+        name: 'Auditeur SEO',
         url: config.publicBaseUrl,
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'Any',
@@ -63,8 +74,23 @@ export async function registerPages(app, { config, store, payments }) {
     });
   };
 
-  app.get('/', (req, reply) => html(reply, homePage('en')));
-  app.get('/fr/', (req, reply) => html(reply, homePage('fr')));
+  // The EN/FR switch links to "?lang=xx": remember the choice, then show the clean URL.
+  app.addHook('onRequest', async (req, reply) => {
+    const l = req.query?.lang;
+    if (req.method !== 'GET' || (l !== 'en' && l !== 'fr') || req.url.startsWith('/api/') || req.url.startsWith('/r/')) return;
+    setLangCookie(req, reply, l);
+    return reply.code(302).redirect(req.url.split('?')[0]);
+  });
+
+  const home = (pageLang) => (req, reply) => {
+    const { lang, store, redirect } = homepageLang(req, pageLang);
+    if (store) setLangCookie(req, reply, lang);
+    reply.header('vary', 'Accept-Language, Cookie');
+    if (redirect && redirect !== req.url) return reply.code(302).redirect(redirect);
+    return html(reply, homePage(pageLang));
+  };
+  app.get('/', home('en'));
+  app.get('/fr/', home('fr'));
   app.get('/fr', (req, reply) => reply.redirect('/fr/', 301));
 
   // Shared report page. Indexing is disabled: reports are user content,
@@ -72,7 +98,8 @@ export async function registerPages(app, { config, store, payments }) {
   app.get('/r/:id', (req, reply) => {
     const report = ID_RE.test(req.params.id) ? store.getReport(req.params.id) : null;
     if (!report) return html(reply, notFound(), 404);
-    const lang = req.query.lang === 'fr' || (!req.query.lang && report.lang === 'fr') ? 'fr' : 'en';
+    const wanted = req.query.lang || langFromCookie(req.headers.cookie) || report.lang;
+    const lang = wanted === 'fr' ? 'fr' : 'en';
     const t = UI[lang];
     const host = new URL(report.url).hostname;
     const score = report.data?.score.overall;
@@ -153,8 +180,8 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
         name: fr ? 'Rapport complet' : 'Full report',
         price: fr ? '7,90 € une fois' : '€7.90 one-time',
         items: fr
-          ? ['Tous les problèmes expliqués, avec URL concernées', 'Exemples de correction', 'Plan d’action IA personnalisé', 'Plan d’action prioritaire complet', 'Export PDF']
-          : ['Every issue explained, with affected URLs', 'Fix examples', 'Personalised AI action plan', 'Full priority roadmap', 'PDF export'],
+          ? ['Tous les problèmes expliqués, avec URL concernées', 'Exemples de correction', 'Plan d’action personnalisé', 'Plan d’action prioritaire complet', 'Export PDF']
+          : ['Every issue explained, with affected URLs', 'Fix examples', 'Personalised action plan', 'Full priority roadmap', 'PDF export'],
         cta: payments ? `<p class="muted small">${fr ? 'Disponible depuis chaque rapport.' : 'Available from any report.'}</p>` : `<p class="muted small">${fr ? 'Gratuit pendant la bêta : le rapport complet est offert.' : 'Free during beta: full reports are unlocked for everyone.'}</p>`,
       },
       {
@@ -172,7 +199,7 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
   <div class="cards three pricing">${plans.map((p) => `<div class="card plan"><h2 class="h3">${esc(p.name)}</h2><p class="price">${esc(p.price)}</p><ul class="checklist">${p.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>${p.cta}</div>`).join('')}</div>
   <p class="muted small center">${fr ? 'Prix TTC indicatifs, susceptibles d’évoluer. Aucun abonnement caché, annulation à tout moment.' : 'Indicative prices, subject to change. No hidden subscription, cancel anytime.'}</p>
 </section>`;
-    return layout({ config, lang, path: fr ? '/fr/tarifs' : '/pricing', title: fr ? 'Tarifs · AI Website Auditor' : 'Pricing · AI Website Auditor', description: fr ? 'Audit gratuit, rapport complet à l’unité, monitoring Pro.' : 'Free audit, one-time full report, Pro monitoring.', alternates: [{ lang: 'en', path: '/pricing' }, { lang: 'fr', path: '/fr/tarifs' }], body, pageData: { page: 'pricing' } });
+    return layout({ config, lang, path: fr ? '/fr/tarifs' : '/pricing', title: fr ? 'Tarifs · Auditeur SEO' : 'Pricing · Auditeur SEO', description: fr ? 'Audit gratuit, rapport complet à l’unité, monitoring Pro.' : 'Free audit, one-time full report, Pro monitoring.', alternates: [{ lang: 'en', path: '/pricing' }, { lang: 'fr', path: '/fr/tarifs' }], body, pageData: { page: 'pricing' } });
   };
   app.get('/pricing', (req, reply) => html(reply, pricing('en')));
   app.get('/fr/tarifs', (req, reply) => html(reply, pricing('fr')));
@@ -184,7 +211,7 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
       .join('');
     const body = `<article class="container narrow prose">
   <h1>How the score is calculated</h1>
-  <p class="lead">No black box: every point comes from a measurable check. AI is only used to explain results, never to invent them.</p>
+  <p class="lead">No black box: every point comes from a measurable check. Nothing is estimated or guessed.</p>
   <h2>1. Checks</h2>
   <p>We run ${Object.keys(CATALOG).length} deterministic checks. Each failed check has a severity and a penalty: critical = ${PENALTY.critical}, warning = ${PENALTY.warning}, suggestion = ${PENALTY.info}.</p>
   <h2>2. Pages affected</h2>

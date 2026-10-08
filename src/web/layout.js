@@ -11,11 +11,15 @@ export const jsonForHtml = (data) => JSON.stringify(data).replace(/</g, '\\u003c
 
 const REPO = 'https://github.com/mxthis971/AI-Website-Auditor';
 
+const LOGO = '<svg class="logo-mark" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5" fill="currentColor"/><path d="M6 15.5l3.5-4 3 2.5L18 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 export function layout({ config, lang = 'en', title, description, path, body, alternates = null, noindex = false, ogImage = null, jsonLd = null, pageData = null }) {
   const t = UI[lang];
   const base = config.publicBaseUrl;
   const canonical = `${base}${path}`;
   const home = lang === 'fr' ? '/fr/' : '/';
+  // The EN/FR switch goes to the same page in the other language when it exists.
+  const switchPath = (l) => (alternates || []).find((a) => a.lang === l)?.path || (l === 'fr' ? '/fr/' : '/');
   const legal = lang === 'fr' ? { privacy: '/fr/confidentialite', terms: '/fr/conditions', legal: '/fr/mentions-legales' } : { privacy: '/privacy', terms: '/terms', legal: '/legal' };
   return `<!doctype html>
 <html lang="${lang}">
@@ -29,7 +33,7 @@ ${config.googleSiteVerification ? `<meta name="google-site-verification" content
 ${noindex ? '<meta name="robots" content="noindex, follow">' : ''}
 ${(alternates || []).map((a) => `<link rel="alternate" hreflang="${a.lang}" href="${esc(base + a.path)}">`).join('\n')}
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="AI Website Auditor">
+<meta property="og:site_name" content="Auditeur SEO">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
@@ -45,12 +49,12 @@ ${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication
 <body>
 <header class="site-header">
   <div class="container nav">
-    <a class="logo" href="${home}"><span class="logo-mark" aria-hidden="true">◎</span> ${esc(t.brand)}</a>
+    <a class="logo" href="${home}">${LOGO}<span>${esc(t.brand)}</span></a>
     <nav aria-label="Main">
       <a href="/tools/">${esc(t.nav.tools)}</a>
       <a href="${lang === 'fr' ? '/fr/tarifs' : '/pricing'}">${esc(t.nav.pricing)}</a>
       <a href="/how-scoring-works">${esc(t.nav.scoring)}</a>
-      <a href="${lang === 'fr' ? '/' : '/fr/'}" hreflang="${lang === 'fr' ? 'en' : 'fr'}">${lang === 'fr' ? 'EN' : 'FR'}</a>
+      <span class="lang-switch" role="group" aria-label="Language">${['en', 'fr'].map((l) => (l === lang ? `<span aria-current="true">${l.toUpperCase()}</span>` : `<a href="${esc(switchPath(l))}?lang=${l}" hreflang="${l}" rel="nofollow">${l.toUpperCase()}</a>`)).join('')}</span>
     </nav>
   </div>
 </header>

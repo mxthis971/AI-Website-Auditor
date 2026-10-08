@@ -272,11 +272,11 @@
 
   function aiSection(id, r, key) {
     if (!r.aiEnabled || !r.full) return null;
-    var box = h('section', { class: 'card ai-box' }, h('h2', { class: 'h3', text: '✨ ' + ui.report.aiTitle }));
+    var box = h('section', { class: 'card ai-box' }, h('h2', { class: 'h3', text: ui.report.aiTitle }));
     function render(ai) {
       box.textContent = '';
       append(box, [
-        h('h2', { class: 'h3', text: '✨ ' + ui.report.aiTitle }),
+        h('h2', { class: 'h3', text: ui.report.aiTitle }),
         h('p', { text: ai.summary }),
         h('ol', null, ai.priorities.map(function (p) {
           return h('li', null, h('strong', { text: p.issueId }), h('p', { text: p.why }), h('ul', null, p.steps.map(function (s) { return h('li', { text: s }); })));

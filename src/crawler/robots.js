@@ -2,7 +2,7 @@
 // pick the group for our bot (or "*"), longest matching rule wins,
 // "Allow" wins a tie.
 
-export function parseRobots(text, botToken = 'aiwebsiteauditorbot') {
+export function parseRobots(text, botToken = 'auditeurseobot') {
   const groups = [];
   const sitemaps = [];
   let current = null;

@@ -162,7 +162,7 @@ function singleRequest(url, { method, headers, timeoutMs, maxBodyBytes, lookup, 
 export async function safeFetch(input, options = {}) {
   const {
     method = 'GET',
-    userAgent = 'AIWebsiteAuditorBot',
+    userAgent = 'AuditeurSEOBot',
     timeoutMs = 10_000,
     maxBodyBytes = 3 * 1024 * 1024,
     maxRedirects = 5,

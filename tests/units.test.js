@@ -65,7 +65,7 @@ Sitemap: https://s.com/sitemap.xml`);
 });
 
 test('robots.txt group for our own bot takes precedence', () => {
-  const r = parseRobots('User-agent: *\nDisallow: /\n\nUser-agent: AIWebsiteAuditorBot\nAllow: /');
+  const r = parseRobots('User-agent: *\nDisallow: /\n\nUser-agent: AuditeurSEOBot\nAllow: /');
   assert.equal(r.isAllowed('/page'), true);
 });
 

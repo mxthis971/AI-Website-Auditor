@@ -39,7 +39,7 @@ export function loadConfig(overrides = {}) {
     crawler: {
       userAgent:
         process.env.CRAWLER_USER_AGENT ||
-        'AIWebsiteAuditorBot/0.1 (+https://github.com/mxthis971/AI-Website-Auditor)',
+        'AuditeurSEOBot/0.1 (+https://auditeur-seo.fr)',
       maxPages: int('CRAWL_MAX_PAGES', 10),
       maxDepth: int('CRAWL_MAX_DEPTH', 2),
       concurrency: int('CRAWL_CONCURRENCY', 3),

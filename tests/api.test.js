@@ -294,3 +294,42 @@ test('legal pages name the publisher and host, with no placeholder left', async 
   }
   await app.close();
 });
+
+test('first visit: French browsers go to /fr/, choice is kept in a cookie', async () => {
+  const app = await makeApp();
+  const fr = await app.inject({ url: '/', headers: { 'accept-language': 'fr-FR,fr;q=0.9,en;q=0.8' } });
+  assert.equal(fr.statusCode, 302);
+  assert.equal(fr.headers.location, '/fr/');
+  assert.match(fr.headers['set-cookie'], /^lang=fr; Path=\/; Max-Age=31536000; SameSite=Lax/);
+
+  const en = await app.inject({ url: '/', headers: { 'accept-language': 'de-DE,en;q=0.5' } });
+  assert.equal(en.statusCode, 200);
+  assert.match(en.headers['set-cookie'], /^lang=en/);
+
+  // Search engines send no Accept-Language: English page, no cookie, no redirect.
+  const bot = await app.inject('/');
+  assert.equal(bot.statusCode, 200);
+  assert.equal(bot.headers['set-cookie'], undefined);
+
+  // The cookie wins over the browser language.
+  assert.equal((await app.inject({ url: '/', headers: { 'accept-language': 'fr', cookie: 'lang=en' } })).statusCode, 200);
+  assert.equal((await app.inject({ url: '/', headers: { cookie: 'lang=fr' } })).headers.location, '/fr/');
+
+  // The EN/FR switch stores the choice and lands on the clean URL.
+  const sw = await app.inject({ url: '/pricing?lang=en', headers: { cookie: 'lang=fr' } });
+  assert.equal(sw.statusCode, 302);
+  assert.equal(sw.headers.location, '/pricing');
+  assert.match(sw.headers['set-cookie'], /^lang=en/);
+  await app.close();
+});
+
+test('rebranded as Auditeur SEO, no AI wording on public pages', async () => {
+  const app = await makeApp();
+  for (const url of ['/', '/fr/', '/pricing', '/fr/tarifs', '/how-scoring-works', '/tools/']) {
+    // The GitHub repository keeps its name; only the visible brand changes.
+    const body = (await app.inject(url)).body.replaceAll('mxthis971/AI-Website-Auditor', '');
+    assert.match(body, /Auditeur SEO/, url);
+    assert.doesNotMatch(body, /AI Website Auditor|\bAI\b|\bIA\b/, url);
+  }
+  await app.close();
+});

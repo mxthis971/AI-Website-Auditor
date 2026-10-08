@@ -1,6 +1,6 @@
-# AI Website Auditor
+# Auditeur SEO
 
-**Your automated website technical analyst.** Enter a URL: the auditor crawls the site, runs 60+ deterministic checks (SEO, performance, accessibility, technical, content), computes a transparent score and explains every problem in plain language, with its impact, the fix and an example. An optional AI layer turns the findings into a prioritised action plan.
+**Technical SEO scanner for websites** ([auditeur-seo.fr](https://auditeur-seo.fr)). Enter a URL: the auditor crawls the site, runs 60+ deterministic checks (SEO, performance, accessibility, technical, content), computes a transparent score and explains every problem in plain language, with its impact, the fix and an example. An optional AI layer turns the findings into a prioritised action plan.
 
 > Cloud version: _coming soon (see [Deployment](docs/DEPLOYMENT.md))_ · Licence: MIT
 

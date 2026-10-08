@@ -36,6 +36,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   store ??= new Store(config.databasePath, config.turso);
+  if (store.kind === 'sqlite' && config.turso?.problem && process.env.TURSO_DATABASE_URL) app.log.warn(config.turso.problem);
   const stale = await store.failStaleJobs();
   if (stale) app.log.warn({ count: stale }, 'marked interrupted audits as failed');
   const queue = new AuditQueue({ store, config, log: app.log, resolver });
@@ -86,7 +87,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   // ---------------------------------------------------------------- API
-  app.get('/api/health', async () => ({ ok: true, uptimeSec: Math.round((Date.now() - started) / 1000), storage: store.kind }));
+  app.get('/api/health', async () => ({ ok: true, uptimeSec: Math.round((Date.now() - started) / 1000), storage: store.kind, ...(store.kind === 'sqlite' && config.turso?.problem ? { storageNote: config.turso.problem } : {}) }));
 
   app.get('/api/config', async () => ({
     paymentsEnabled: payments,

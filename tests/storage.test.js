@@ -73,3 +73,12 @@ test('a database error is reported, not swallowed', async () => {
   const store = new Store(null, { url: 'libsql://demo-org.turso.io', authToken: 'wrong', fetchImpl });
   await assert.rejects(store.getReport('abcdefgh1234'), /HTTP 401/);
 });
+
+test('Turso settings pasted with spaces, quotes or a final slash still work', async () => {
+  const { tursoConfig } = await import('../src/config.js');
+  const ok = tursoConfig('  "libsql://db-org.aws-us-west-2.turso.io/"\n', ' Bearer abc.def ');
+  assert.deepEqual(ok, { url: 'libsql://db-org.aws-us-west-2.turso.io', authToken: 'abc.def', problem: null });
+  assert.match(tursoConfig('', 'x').problem, /URL missing/);
+  assert.match(tursoConfig('postgres://x', 'x').problem, /invalid/);
+  assert.match(tursoConfig('libsql://db.turso.io', '').problem, /TOKEN missing/);
+});

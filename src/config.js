@@ -15,6 +15,18 @@ function bool(name, fallback) {
   return ['1', 'true', 'yes', 'on'].includes(raw.toLowerCase());
 }
 
+// Values pasted into a hosting dashboard often carry spaces, quotes or a final
+// slash: clean them. `problem` says (without the secret) why Turso is off.
+export function tursoConfig(rawUrl = '', rawToken = '') {
+  const clean = (v) => String(v || '').trim().replace(/^["']|["']$/g, '').trim();
+  const url = clean(rawUrl).replace(/\/+$/, '');
+  const authToken = clean(rawToken).replace(/^Bearer\s+/i, '');
+  if (!url) return { url: '', authToken: '', problem: 'TURSO_DATABASE_URL missing' };
+  if (!/^(libsql|https):\/\/[\w.-]+$/.test(url)) return { url: '', authToken: '', problem: 'TURSO_DATABASE_URL invalid (expected libsql://name.turso.io)' };
+  if (!authToken) return { url: '', authToken: '', problem: 'TURSO_AUTH_TOKEN missing' };
+  return { url, authToken, problem: null };
+}
+
 export function loadConfig(overrides = {}) {
   const config = {
     port: int('PORT', 3000),
@@ -22,7 +34,7 @@ export function loadConfig(overrides = {}) {
     publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
     databasePath: process.env.DATABASE_PATH || './data/auditor.db',
     // Hosted database (Turso). When set, reports survive redeploys; DATABASE_PATH is then unused.
-    turso: { url: /^(libsql|https):\/\/[\w.-]+$/.test(process.env.TURSO_DATABASE_URL || '') ? process.env.TURSO_DATABASE_URL : '', authToken: process.env.TURSO_AUTH_TOKEN || '' },
+    turso: tursoConfig(process.env.TURSO_DATABASE_URL, process.env.TURSO_AUTH_TOKEN),
     logLevel: process.env.LOG_LEVEL || 'info',
     // Reports older than this are deleted automatically (data minimisation).
     reportRetentionDays: int('REPORT_RETENTION_DAYS', 30),

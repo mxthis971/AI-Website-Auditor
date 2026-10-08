@@ -10,7 +10,7 @@ on:
         default: https://ai-website-auditor.onrender.com
   push:
     branches: ['claude/**']
-    paths: ['.github/workflows/live-check.yml', 'scripts/live-check.sh']
+    paths: ['.github/workflows/live-check.yml', 'scripts/live-check.sh', 'src/**']
 
 permissions:
   contents: read
@@ -18,6 +18,8 @@ permissions:
 jobs:
   deployed-site:
     runs-on: ubuntu-latest
+    # Informational: the deployed site may be asleep, or run an older version.
+    continue-on-error: true
     env:
       BASE_URL: ${{ inputs.base_url || 'https://ai-website-auditor.onrender.com' }}
     steps:

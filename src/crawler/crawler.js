@@ -93,6 +93,9 @@ export async function crawlSite(input, { config, onProgress = () => {}, resolver
       throw err;
     }
   }
+  if ([400, 401, 403, 406, 429].includes(home.status)) {
+    throw new AuditError('blocked', `The website refused our automated visit (HTTP ${home.status}). Many large sites block robots; this does not mean the site is broken.`);
+  }
   if (home.status >= 400) {
     throw new AuditError('http_error', `The website answered with HTTP ${home.status}, so the page cannot be analysed.`);
   }

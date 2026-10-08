@@ -136,6 +136,27 @@ test('homepage returning HTTP 500 fails with a clear error', async () => {
   }
 });
 
+test('a site that blocks robots gets a "blocked" error, not "broken"', async () => {
+  const s = await startSite({ '/': () => ({ status: 403, body: 'denied' }) });
+  try {
+    await assert.rejects(runAudit(s.url, { config: config() }), (e) => e instanceof AuditError && e.code === 'blocked');
+  } finally {
+    await s.close();
+  }
+});
+
+test('login pages are not broken links, and canonical URL variants are not duplicates', async () => {
+  const page = (title, extra = '') => () => ({ body: `<html lang="en"><head><title>${title}</title>${extra}</head><body><h1>Hi</h1><a href="/account">Account</a><a href="/?lang=fr">FR</a></body></html>` });
+  const s = await startSite({ '/': page('Home page of the test website', '<link rel="canonical" href="/">'), '/account': () => ({ status: 401, body: 'login' }) });
+  try {
+    const r = await runAudit(s.url, { config: config() });
+    assert.ok(!ids(r).has('broken-internal-links'));
+    assert.ok(!ids(r).has('title-duplicate'));
+  } finally {
+    await s.close();
+  }
+});
+
 test('slow homepage times out', async () => {
   const s = await startSite({ '/': () => ({ body: '<html></html>', delayMs: 3000 }) });
   try {

@@ -18,8 +18,8 @@ permissions:
 jobs:
   deployed-site:
     runs-on: ubuntu-latest
-    # Informational: the deployed site may be asleep, or run an older version.
-    continue-on-error: true
+    # Manual only (Actions tab → Live check → Run workflow): the deployed URL is not under this branch's control.
+    if: github.event_name == 'workflow_dispatch'
     env:
       BASE_URL: ${{ inputs.base_url || 'https://ai-website-auditor.onrender.com' }}
     steps:

@@ -111,6 +111,11 @@ export async function crawlSite(input, { config, onProgress = () => {}, resolver
   const queue = [];
   const blockedByRobots = [];
   const addPage = (url, response, depth, error = null) => {
+    // Two links may redirect to the same final page: analyse it only once.
+    if (response && response.url !== url && pages.some((p) => p.finalUrl === response.url)) {
+      return null;
+    }
+    if (response) queued.add(response.url);
     const contentType = response?.headers?.['content-type'] || '';
     const isHtml = /html/i.test(contentType) || (!contentType && response?.text?.includes('<html'));
     const page = {

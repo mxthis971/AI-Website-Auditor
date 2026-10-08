@@ -1,15 +1,18 @@
 // Transparent scoring (documented in docs/SCORING.md).
 //
-// Each category starts at 100. Every failed check removes points:
-//   critical = 30, warning = 12, info = 4
+// Each failed check has a penalty:  critical = 25, warning = 10, info = 3.
 // For checks evaluated page by page, the penalty is scaled by how many pages
 // are affected: factor = 0.5 + 0.5 × (affected pages / crawled pages).
-// Example: a warning on 2 of 10 pages costs 12 × (0.5 + 0.5 × 0.2) = 7.2 points.
+// Category score = 100 × (1 − p1/100) × (1 − p2/100) × …
+// Multiplying (instead of subtracting) gives diminishing returns: the score
+// drops fast for the first problems and never collapses to 0 just because a
+// site has many small issues.
+// Example: one critical (25) and one warning (10) → 100 × 0.75 × 0.90 = 67.5 → 68.
 // Overall score = weighted average of the category scores.
 
 import { CATALOG, CATEGORIES } from './catalog.js';
 
-export const PENALTY = { critical: 30, warning: 12, info: 4 };
+export const PENALTY = { critical: 25, warning: 10, info: 3 };
 export const CATEGORY_WEIGHTS = { seo: 0.3, performance: 0.2, accessibility: 0.2, technical: 0.2, content: 0.1 };
 
 export function penaltyFor(result) {
@@ -19,7 +22,7 @@ export function penaltyFor(result) {
 }
 
 export function scoreResults(results) {
-  const categories = Object.fromEntries(CATEGORIES.map((c) => [c, { score: 100, failed: 0, passed: 0, penalty: 0 }]));
+  const categories = Object.fromEntries(CATEGORIES.map((c) => [c, { score: 100, failed: 0, passed: 0, multiplier: 1 }]));
   const issues = [];
   const passed = [];
 
@@ -30,7 +33,7 @@ export function scoreResults(results) {
     const severity = r.severity || meta.severity;
     if (r.failed) {
       const penalty = penaltyFor({ ...r, severity });
-      categories[category].penalty += penalty;
+      categories[category].multiplier *= 1 - penalty / 100;
       categories[category].failed += 1;
       issues.push({
         id: r.id,
@@ -50,8 +53,8 @@ export function scoreResults(results) {
   }
 
   for (const c of CATEGORIES) {
-    categories[c].score = Math.max(0, Math.round(100 - categories[c].penalty));
-    categories[c].penalty = Math.round(categories[c].penalty * 10) / 10;
+    categories[c].score = Math.max(0, Math.round(100 * categories[c].multiplier));
+    delete categories[c].multiplier;
   }
   const overall = Math.round(CATEGORIES.reduce((sum, c) => sum + categories[c].score * CATEGORY_WEIGHTS[c], 0));
 

@@ -2,8 +2,6 @@
 // "failed" (with the affected URLs) or "passed". No AI here: everything is
 // measurable and reproducible. Human-readable texts live in catalog.js.
 
-import { siteKey } from './page.js';
-
 export const LIMITS = {
   titleMin: 15,
   titleMax: 60,
@@ -110,7 +108,7 @@ export function runChecks(site, { pagespeed = null } = {}) {
   add(siteRule('sitemap-missing', !site.sitemap.found));
   add(siteRule('sitemap-invalid', site.sitemap.found && !site.sitemap.valid, { affected: site.sitemap.url ? [{ url: site.sitemap.url, detail: null }] : [] }));
   add(siteRule('sitemap-not-in-robots', site.robots.found && site.sitemap.found && site.robots.sitemaps.length === 0));
-  add({ ...siteRule('pages-blocked-by-robots', site.robots.blockedPages.length > 0), count: site.robots.blockedPages.length, affected: site.robots.blockedPages.map((url) => ({ url, detail: null })), severityHint: 'info' });
+  add({ ...siteRule('pages-blocked-by-robots', site.robots.blockedPages.length > 0), count: site.robots.blockedPages.length, affected: site.robots.blockedPages.map((url) => ({ url, detail: null }))});
 
   const brokenInternal = site.linkChecks.filter((l) => l.internal && ((l.status && l.status >= 400) || (l.error && !['skipped', 'private_address'].includes(l.error))));
   add({ ...siteRule('broken-internal-links', brokenInternal.length), count: brokenInternal.length, affected: brokenInternal.slice(0, MAX_AFFECTED).map((l) => ({ url: l.url, detail: `${l.status ? `HTTP ${l.status}` : l.error} — linked from ${l.foundOn}` })) });
@@ -132,7 +130,8 @@ export function runChecks(site, { pagespeed = null } = {}) {
   add(siteRule('https-certificate-error', site.httpsError === 'tls_error'));
   add(siteRule('http-not-redirected', isHttps && site.httpsRedirect.checked && site.httpsRedirect.redirectsToHttps === false));
   add(perPage('mixed-content', site, (f) => (f.mixedContent.length ? f.mixedContent.slice(0, 5).join(', ') : false)));
-  const errorPages = site.pages.filter((p) => p.error || (p.status && p.status >= 400));
+  // 4xx pages are reported as broken links; here we keep server errors (5xx) and unreachable pages.
+  const errorPages = site.pages.filter((p) => p.error || (p.status && p.status >= 500));
   add({ ...siteRule('page-errors', errorPages.length), count: errorPages.length, affected: errorPages.slice(0, MAX_AFFECTED).map((p) => ({ url: p.url, detail: p.error ? p.error.message : `HTTP ${p.status}` })) });
   const chains = [
     ...site.pages.filter((p) => p.redirects.length > 1).map((p) => ({ url: p.url, hops: p.redirects.length })),
@@ -229,4 +228,3 @@ export function runChecks(site, { pagespeed = null } = {}) {
   return results;
 }
 
-export { htmlPages, siteKey };

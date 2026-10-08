@@ -12,7 +12,7 @@ export const LIMITS = {
   heavyImageBytes: 300 * 1024,
   legacyImageBytes: 100 * 1024,
   pageWeightBytes: 3 * 1024 * 1024,
-  htmlMaxBytes: 300 * 1024,
+  htmlMaxBytes: 500 * 1024,
   thinContentWords: 200,
   maxRequests: 50,
 };
@@ -48,6 +48,9 @@ function siteRule(id, failed, extra = {}) {
 function duplicates(site, getter) {
   const map = new Map();
   for (const page of htmlPages(site)) {
+    // A URL variant (?lang=, tracking params…) whose canonical points elsewhere is the same page, not a duplicate.
+    const canonical = page.facts.canonicals[0];
+    if (canonical && canonical !== page.finalUrl) continue;
     const value = getter(page.facts);
     if (!value) continue;
     if (!map.has(value)) map.set(value, []);
@@ -55,6 +58,10 @@ function duplicates(site, getter) {
   }
   return [...map.entries()].filter(([, urls]) => urls.length > 1);
 }
+
+// 401/403/429 mean "login needed", "robots refused" or "slow down": the page exists.
+const NOT_BROKEN = new Set([401, 403, 429]);
+const isBrokenStatus = (status) => status >= 400 && !NOT_BROKEN.has(status);
 
 const VALID_HREFLANG = /^(x-default|[a-z]{2,3}(-[a-z]{4})?(-([a-z]{2}|\d{3}))?)$/i;
 
@@ -110,7 +117,7 @@ export function runChecks(site, { pagespeed = null } = {}) {
   add(siteRule('sitemap-not-in-robots', site.robots.found && site.sitemap.found && site.robots.sitemaps.length === 0));
   add({ ...siteRule('pages-blocked-by-robots', site.robots.blockedPages.length > 0), count: site.robots.blockedPages.length, affected: site.robots.blockedPages.map((url) => ({ url, detail: null }))});
 
-  const brokenInternal = site.linkChecks.filter((l) => l.internal && ((l.status && l.status >= 400) || (l.error && !['skipped', 'private_address'].includes(l.error))));
+  const brokenInternal = site.linkChecks.filter((l) => l.internal && ((l.status && isBrokenStatus(l.status)) || (l.error && !['skipped', 'private_address'].includes(l.error))));
   add({ ...siteRule('broken-internal-links', brokenInternal.length), count: brokenInternal.length, affected: brokenInternal.slice(0, MAX_AFFECTED).map((l) => ({ url: l.url, detail: `${l.status ? `HTTP ${l.status}` : l.error} — linked from ${l.foundOn}` })) });
   add(siteRule('internal-links-few', hf.links && hf.links.filter((l) => l.internal).length < 3, { values: { count: hf.links ? hf.links.filter((l) => l.internal).length : 0 } }));
 
@@ -154,7 +161,7 @@ export function runChecks(site, { pagespeed = null } = {}) {
   add(siteRule('hsts-missing', isHttps && home && !home.headers['strict-transport-security']));
   const brokenExternal = site.linkChecks.filter((l) => !l.internal && l.status && [404, 410].includes(l.status));
   add({ ...siteRule('broken-external-links', brokenExternal.length), count: brokenExternal.length, affected: brokenExternal.slice(0, MAX_AFFECTED).map((l) => ({ url: l.url, detail: `HTTP ${l.status} — linked from ${l.foundOn}` })) });
-  const brokenAssets = site.assets.filter((a) => a.status && a.status >= 400);
+  const brokenAssets = site.assets.filter((a) => a.status && isBrokenStatus(a.status));
   add({ ...siteRule('broken-resources', brokenAssets.length), count: brokenAssets.length, affected: brokenAssets.map((a) => ({ url: a.url, detail: `${a.type}: HTTP ${a.status}` })) });
 
   // ---------------------------------------------------------- Performance

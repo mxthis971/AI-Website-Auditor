@@ -1,7 +1,22 @@
 // Server-side HTML layout shared by every page: fast to load (no framework,
 // no build step), crawlable by search engines, with complete SEO metadata.
 
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { UI } from '../i18n/ui.js';
+
+// Static files are cached 7 days by browsers: a short hash of their content in
+// the URL makes every deploy that changes them load the new version at once.
+const assetVersion = (rel) => {
+  try {
+    return createHash('sha256').update(readFileSync(fileURLToPath(new URL(`../../public/${rel}`, import.meta.url)))).digest('hex').slice(0, 10);
+  } catch {
+    return 'dev';
+  }
+};
+const CSS_V = assetVersion('css/app.css');
+const JS_V = assetVersion('js/app.js');
 
 export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -40,10 +55,10 @@ ${(alternates || []).map((a) => `<link rel="alternate" hreflang="${a.lang}" href
 <meta property="og:image" content="${esc(ogImage || `${base}/static/img/og.png`)}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/app.css?v=${CSS_V}">
 ${jsonLd ? `<script type="application/ld+json">${jsonForHtml(jsonLd)}</script>` : ''}
 <script type="application/json" id="page-data">${jsonForHtml({ lang, ui: t, ads: adsData(config), ...(pageData || {}) })}</script>
-<script src="/static/js/app.js" defer></script>
+<script src="/static/js/app.js?v=${JS_V}" defer></script>
 ${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(config.adsense.client)}" crossorigin="anonymous"></script>` : ''}
 </head>
 <body>

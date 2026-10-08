@@ -1,0 +1,36 @@
+# Checks the deployed site and audits a few real public websites.
+# Runs on GitHub's servers (they can reach the internet) to spot false positives.
+name: Live check
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed site
+        default: https://ai-website-auditor.onrender.com
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/live-check.yml', 'scripts/live-check.sh']
+
+permissions:
+  contents: read
+
+jobs:
+  deployed-site:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://ai-website-auditor.onrender.com' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/live-check.sh deployed
+
+  real-sites:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/live-check.sh real-sites

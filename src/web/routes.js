@@ -77,7 +77,7 @@ export async function registerPages(app, { config, store, payments }) {
     const host = new URL(report.url).hostname;
     const score = report.data?.score.overall;
     const title = score != null ? `${host}: ${score}/100 · ${t.report.title}` : `${host} · ${t.report.title}`;
-    const body = `<section class="container"><div id="report" data-report-id="${esc(report.id)}"><div class="progress"><div class="spinner" aria-hidden="true"></div><p class="progress-text">…</p></div></div>${adSlot(config)}</section>`;
+    const body = `<section class="container"><div id="report" data-report-id="${esc(report.id)}"><div class="progress"><div class="spinner" aria-hidden="true"></div><p class="progress-text">…</p></div></div></section>`;
     return html(
       reply,
       layout({ config, lang, path: `/r/${report.id}`, title, description: `${t.report.yourScore}: ${score ?? '…'}/100. SEO, performance, accessibility, technical and content audit of ${host}.`, body, noindex: true, pageData: { page: 'report', reportId: report.id } }),
@@ -111,6 +111,7 @@ export async function registerPages(app, { config, store, payments }) {
   </div>
 </section>
 <section id="tool-result" class="container narrow" hidden></section>
+${config.adsense?.client ? '<div class="container narrow" data-ad-placement="tool"></div>' : ''}
 <article class="container narrow prose">
   <h2>Checks performed</h2>
   <ul class="checklist">${checks.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
@@ -230,9 +231,3 @@ export async function registerPages(app, { config, store, payments }) {
   });
 }
 
-/** Banner area on the report page; empty (not rendered) unless AdSense is configured. */
-function adSlot(config) {
-  const { client, reportSlot } = config.adsense || {};
-  if (!client) return '';
-  return `<aside class="ad-slot" id="ad-report" aria-label="Advertisement" data-ad-client="${esc(client)}" data-ad-slot="${esc(reportSlot)}"></aside>`;
-}

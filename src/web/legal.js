@@ -24,14 +24,15 @@ export function legalPages(config) {
 <li><strong>No account, no name, no email</strong> is required to run an audit.</li>
 <li><strong>IP addresses</strong> are used in memory only, to limit abuse (rate limiting). They are not written to our database or logs.</li>
 <li><strong>Payments</strong> (when enabled) are processed by Stripe. We never see or store card details; we only store a payment reference linked to the report.</li>
-<li><strong>Cookies</strong>: we do not use advertising or analytics cookies. Your browser's local storage keeps the private key that lets you delete your own reports; it never leaves your device except when you use it.</li>
+<li><strong>Advertising cookies</strong>: pages show ads from Google AdSense. Google may use cookies to show and measure ads; in the EU/UK they are only used for personalised ads if you consent through the consent banner. See <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">how Google uses data from partner sites</a>.</li>
+<li><strong>Local storage</strong>: your browser keeps the private key that lets you delete your own reports; it never leaves your device except when you use it.</li>
 </ul>
 <h2>Why</h2>
 <p>To produce the audit you requested (contract performance) and to protect the service against abuse (legitimate interest).</p>
 <h2>How long</h2>
 <p>Free reports are deleted automatically after ${days} days. Paid reports are kept so you can access what you bought; you can delete any report you created at any time from the report page.</p>
 <h2>Sub-processors</h2>
-<p>Hosting provider: [hosting provider]. Optional: Anthropic (AI explanations: only the technical audit results are sent, no personal data), Google PageSpeed Insights (receives the audited URL), Stripe (payments).</p>
+<p>Hosting provider: [hosting provider]. Optional: Anthropic (AI explanations: only the technical audit results are sent, no personal data), Google PageSpeed Insights (receives the audited URL), Stripe (payments), Google AdSense (advertising).</p>
 <h2>Your rights</h2>
 <p>Under the GDPR you can request access, correction or deletion. Contact: [contact email]. You can also complain to your data protection authority (in France: CNIL).</p>`,
     },
@@ -48,14 +49,15 @@ export function legalPages(config) {
 <li><strong>Aucun compte, nom ou e-mail</strong> n’est nécessaire pour lancer un audit.</li>
 <li><strong>Les adresses IP</strong> sont utilisées uniquement en mémoire pour limiter les abus. Elles ne sont écrites ni en base de données ni dans les journaux.</li>
 <li><strong>Les paiements</strong> (lorsqu’ils sont activés) sont traités par Stripe. Nous ne voyons ni ne stockons jamais les données de carte ; seule une référence de paiement est liée au rapport.</li>
-<li><strong>Cookies</strong> : aucun cookie publicitaire ni de mesure d’audience. Le stockage local de votre navigateur conserve la clé privée qui vous permet de supprimer vos rapports.</li>
+<li><strong>Cookies publicitaires</strong> : les pages affichent des annonces Google AdSense. Google peut utiliser des cookies pour afficher et mesurer les annonces ; dans l’UE, les annonces personnalisées ne sont utilisées qu’avec votre accord via la bannière de consentement. Voir <a href="https://policies.google.com/technologies/partner-sites?hl=fr" rel="noopener">comment Google utilise les données des sites partenaires</a>.</li>
+<li><strong>Stockage local</strong> : votre navigateur conserve la clé privée qui vous permet de supprimer vos rapports.</li>
 </ul>
 <h2>Pourquoi</h2>
 <p>Pour produire l’audit demandé (exécution du service) et protéger le service contre les abus (intérêt légitime).</p>
 <h2>Combien de temps</h2>
 <p>Les rapports gratuits sont supprimés automatiquement après ${days} jours. Les rapports payés sont conservés pour que vous puissiez y accéder ; vous pouvez supprimer à tout moment un rapport que vous avez créé.</p>
 <h2>Sous-traitants</h2>
-<p>Hébergeur : [hébergeur]. Optionnels : Anthropic (explications IA : seuls les résultats techniques sont envoyés), Google PageSpeed Insights (reçoit l’URL auditée), Stripe (paiements).</p>
+<p>Hébergeur : [hébergeur]. Optionnels : Anthropic (explications IA : seuls les résultats techniques sont envoyés), Google PageSpeed Insights (reçoit l’URL auditée), Stripe (paiements), Google AdSense (publicité).</p>
 <h2>Vos droits</h2>
 <p>Conformément au RGPD, vous pouvez demander l’accès, la rectification ou la suppression de vos données : [e-mail de contact]. Vous pouvez aussi saisir la CNIL.</p>`,
     },

@@ -107,19 +107,31 @@
     claim.then(function () { poll(id); });
   }
 
-  // AdSense banner (only present when the server has an AdSense account configured).
-  var adSlot = document.getElementById('ad-report');
-  if (adSlot && adSlot.dataset.adSlot) {
+  // ------------------------------------------------------------- AdSense
+  // Ads only exist when the server has an AdSense account configured (data.ads).
+  // The AdSense script itself is loaded in <head>; each new <ins> block needs one push({}).
+  function adUnit(slot) {
+    if (!data.ads) return null;
     var ins = document.createElement('ins');
     ins.className = 'adsbygoogle';
     ins.style.display = 'block';
-    ins.dataset.adClient = adSlot.dataset.adClient;
-    ins.dataset.adSlot = adSlot.dataset.adSlot;
+    ins.dataset.adClient = data.ads.client;
+    if (slot) ins.dataset.adSlot = slot;
     ins.dataset.adFormat = 'auto';
     ins.dataset.fullWidthResponsive = 'true';
-    adSlot.appendChild(ins);
-    (window.adsbygoogle = window.adsbygoogle || []).push({});
+    return h('aside', { class: 'ad-slot no-print', 'aria-label': lang === 'fr' ? 'Publicité' : 'Advertisement' },
+      h('span', { class: 'ad-label', text: lang === 'fr' ? 'Publicité' : 'Advertisement' }), ins);
   }
+  function activateAds(root) {
+    (root || document).querySelectorAll('ins.adsbygoogle:not([data-pushed])').forEach(function (ins) {
+      ins.setAttribute('data-pushed', '1');
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* blocked by an ad blocker */ }
+    });
+  }
+  document.querySelectorAll('[data-ad-placement="tool"]').forEach(function (spot) {
+    var unit = adUnit(data.ads && data.ads.toolSlot);
+    if (unit) { spot.appendChild(unit); activateAds(spot); }
+  });
 
   function poll(id) {
     api('GET', '/api/audits/' + id)
@@ -223,6 +235,7 @@
       r.partial ? h('p', { class: 'notice', text: ui.report.partial }) : null,
       h('div', { class: 'score-panel card' }, scoreRing(r.score.overall, r.score.grade), h('div', { class: 'score-side' }, h('p', { class: 'eyebrow', text: ui.report.yourScore }), categories)),
       stats,
+      adUnit(data.ads && data.ads.reportSlot),
       h('section', { class: 'card' }, h('h2', { class: 'h3', text: ui.report.summary }), h('p', { text: r.summary })),
       aiSection(id, r, key),
       cwvSection(r),
@@ -252,6 +265,7 @@
         ownerKey ? h('button', { class: 'link-button', onclick: function () { deleteReport(id, ownerKey); }, text: ui.report.delete }) : null),
       h('p', { class: 'center muted small', text: ui.report.generatedBy }),
     ]);
+    activateAds(reportRoot);
   }
 
   function stat(value, label) { return h('div', { class: 'stat card' }, h('strong', { text: String(value) }), h('span', { class: 'muted small', text: label })); }

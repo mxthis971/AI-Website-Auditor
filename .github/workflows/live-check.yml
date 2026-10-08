@@ -7,7 +7,7 @@ on:
     inputs:
       base_url:
         description: Deployed site
-        default: https://ai-website-auditor.onrender.com
+        default: https://nig-seo-auditor.onrender.com
   push:
     branches: ['claude/**']
     paths: ['.github/workflows/live-check.yml', 'scripts/live-check.sh', 'src/**']
@@ -21,7 +21,7 @@ jobs:
     # Manual only (Actions tab → Live check → Run workflow): the deployed URL is not under this branch's control.
     if: github.event_name == 'workflow_dispatch'
     env:
-      BASE_URL: ${{ inputs.base_url || 'https://ai-website-auditor.onrender.com' }}
+      BASE_URL: ${{ inputs.base_url || 'https://nig-seo-auditor.onrender.com' }}
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/live-check.sh deployed

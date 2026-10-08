@@ -20,7 +20,7 @@
 - **Optional integrations**: Google PageSpeed Insights (Lighthouse + Core Web Vitals), Claude AI action plan, Stripe one-time payment for the full report.
 - **8 free SEO tools**: meta tag, robots.txt, sitemap, heading, Open Graph, image alt, broken link and speed checkers.
 - **Security first**: SSRF protection with DNS pinning, private-network blocking, re-validated redirects, rate limiting, strict CSP. See [docs/SECURITY.md](docs/SECURITY.md).
-- **Privacy by design**: no account, no cookies, no IP stored, reports auto-deleted after 30 days.
+- **Privacy by design**: no account, no IP stored, reports auto-deleted after 30 days. Ads (Google AdSense) only load when `ADSENSE_CLIENT` is set.
 
 ## Architecture
 
@@ -86,7 +86,8 @@ All settings are environment variables; see [.env.example](.env.example). Nothin
 | `PAGESPEED_API_KEY` | Lighthouse scores and Core Web Vitals |
 | `ANTHROPIC_API_KEY` (+ `AI_MODEL`) | AI action plan in reports |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_REPORT_PRICE_ID` | Paid full report (otherwise full reports are free, "beta mode") |
-| `ADSENSE_CLIENT` (+ `ADSENSE_REPORT_SLOT`) | Google AdSense script, `/ads.txt` and a banner on report pages (update the privacy policy and add a consent banner first) |
+| `ADSENSE_CLIENT` (+ `ADSENSE_REPORT_SLOT`, `ADSENSE_TOOL_SLOT`) | Google AdSense script, `/ads.txt` and ad blocks on report and tool pages |
+| `GOOGLE_SITE_VERIFICATION` | Google Search Console ownership `<meta>` tag |
 | `METRICS_TOKEN` | `GET /api/metrics` (audits, error rate, average duration, pages crawled, counters) |
 
 ## Deployment

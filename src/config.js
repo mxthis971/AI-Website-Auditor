@@ -30,7 +30,10 @@ export function loadConfig(overrides = {}) {
     adsense: {
       client: /^ca-pub-\d{10,20}$/.test(process.env.ADSENSE_CLIENT || '') ? process.env.ADSENSE_CLIENT : '',
       reportSlot: /^\d{5,20}$/.test(process.env.ADSENSE_REPORT_SLOT || '') ? process.env.ADSENSE_REPORT_SLOT : '',
+      toolSlot: /^\d{5,20}$/.test(process.env.ADSENSE_TOOL_SLOT || '') ? process.env.ADSENSE_TOOL_SLOT : '',
     },
+    // Google Search Console ownership token (public value, shown in a <meta> tag).
+    googleSiteVerification: /^[\w-]{20,100}$/.test(process.env.GOOGLE_SITE_VERIFICATION || '') ? process.env.GOOGLE_SITE_VERIFICATION : '',
 
     crawler: {
       userAgent:

@@ -244,6 +244,7 @@ test('AdSense: nothing from Google without a publisher ID', async () => {
   assert.doesNotMatch(home.body, /googlesyndication/);
   assert.doesNotMatch(home.headers['content-security-policy'], /googlesyndication/);
   assert.equal((await app.inject('/ads.txt')).statusCode, 404);
+  assert.doesNotMatch((await app.inject('/tools/meta-tag-checker')).body, /data-ad-placement/);
   await app.close();
 });
 
@@ -256,6 +257,16 @@ test('AdSense: script, CSP, ads.txt and report banner when configured', async ()
   assert.equal(ads.body, 'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');
   const { id } = await runAuditViaApi(app);
   const page = await app.inject(`/r/${id}`);
-  assert.match(page.body, /<aside class="ad-slot" id="ad-report"[^>]*data-ad-slot="9876543210"/);
+  assert.match(page.body, /"ads":\{"client":"ca-pub-1234567890123456","reportSlot":"9876543210"/);
+  const tool = await app.inject('/tools/meta-tag-checker');
+  assert.match(tool.body, /data-ad-placement="tool"/);
+  await app.close();
+});
+
+test('Search Console verification tag is on every page when configured', async () => {
+  const app = await makeApp({ config: { googleSiteVerification: 'fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA' } });
+  for (const url of ['/', '/fr/', '/tools/', '/pricing']) {
+    assert.match((await app.inject(url)).body, /<meta name="google-site-verification" content="fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA" \/>/);
+  }
   await app.close();
 });

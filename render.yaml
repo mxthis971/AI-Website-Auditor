@@ -26,7 +26,12 @@ services:
       - key: STRIPE_REPORT_PRICE_ID
         sync: false
       # Google AdSense publisher ID (ca-pub-…) and optional report banner slot ID.
+      # Public IDs (not secrets): AdSense publisher and Search Console token.
       - key: ADSENSE_CLIENT
-        sync: false
+        value: ca-pub-7857466062981714
       - key: ADSENSE_REPORT_SLOT
         sync: false
+      - key: ADSENSE_TOOL_SLOT
+        sync: false
+      - key: GOOGLE_SITE_VERIFICATION
+        value: fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA

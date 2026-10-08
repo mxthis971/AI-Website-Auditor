@@ -25,6 +25,7 @@ export function layout({ config, lang = 'en', title, description, path, body, al
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
+${config.googleSiteVerification ? `<meta name="google-site-verification" content="${esc(config.googleSiteVerification)}" />` : ''}
 ${noindex ? '<meta name="robots" content="noindex, follow">' : ''}
 ${(alternates || []).map((a) => `<link rel="alternate" hreflang="${a.lang}" href="${esc(base + a.path)}">`).join('\n')}
 <meta property="og:type" content="website">
@@ -37,7 +38,7 @@ ${(alternates || []).map((a) => `<link rel="alternate" hreflang="${a.lang}" href
 <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/css/app.css">
 ${jsonLd ? `<script type="application/ld+json">${jsonForHtml(jsonLd)}</script>` : ''}
-<script type="application/json" id="page-data">${jsonForHtml({ lang, ui: t, ...(pageData || {}) })}</script>
+<script type="application/json" id="page-data">${jsonForHtml({ lang, ui: t, ads: adsData(config), ...(pageData || {}) })}</script>
 <script src="/static/js/app.js" defer></script>
 ${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(config.adsense.client)}" crossorigin="anonymous"></script>` : ''}
 </head>
@@ -74,4 +75,10 @@ export function auditForm(t, { tool = null, compact = false } = {}) {
   <p class="form-error" role="alert" hidden></p>
 </form>
 <div class="progress" hidden aria-live="polite"><div class="spinner" aria-hidden="true"></div><p class="progress-text"></p></div>`;
+}
+
+/** What the browser needs to fill ad placements (null when AdSense is off). */
+function adsData(config) {
+  const a = config.adsense || {};
+  return a.client ? { client: a.client, reportSlot: a.reportSlot || null, toolSlot: a.toolSlot || null } : null;
 }

@@ -32,7 +32,8 @@ export function createSafeLookup({ allowPrivateNetworks = false, resolver = dns.
       if (err) return callback(err);
       const list = Array.isArray(addresses) ? addresses : [{ address: addresses, family: options.family || 4 }];
       if (list.length === 0) return callback(new FetchError('dns_failed', `No address for ${hostname}`));
-      if (!allowPrivateNetworks && list.some((a) => isBlockedIp(a.address))) {
+      const allowed = (ip) => allowPrivateNetworks === true || (Array.isArray(allowPrivateNetworks) && allowPrivateNetworks.includes(ip));
+      if (list.some((a) => isBlockedIp(a.address) && !allowed(a.address))) {
         // Refuse the whole host if ANY record is private: mixed records are a classic rebinding trick.
         return callback(new UnsafeUrlError('private_address', `${hostname} resolves to a private or reserved address.`));
       }

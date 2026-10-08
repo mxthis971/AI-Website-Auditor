@@ -106,13 +106,16 @@ export function assertSafeUrl(url, { allowPrivateNetworks = false } = {}) {
   if (url.username || url.password) {
     throw new UnsafeUrlError('credentials_in_url', 'URLs containing credentials are not allowed.');
   }
-  if (allowPrivateNetworks) return url;
+  if (allowPrivateNetworks === true) return url;
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  const bareHost = host.replace(/^\[|\]$/g, '');
+  // Tests can allow a specific list of addresses (e.g. ['127.0.0.1']) and
+  // still verify that everything else is blocked.
+  if (Array.isArray(allowPrivateNetworks) && allowPrivateNetworks.includes(bareHost)) return url;
 
   if (!ALLOWED_PORTS.has(url.port)) {
     throw new UnsafeUrlError('port_not_allowed', 'Only standard web ports (80, 443) are allowed.');
   }
-  const host = url.hostname.toLowerCase().replace(/\.$/, '');
-  const bareHost = host.replace(/^\[|\]$/g, '');
   if (net.isIP(bareHost)) {
     if (isBlockedIp(bareHost)) {
       throw new UnsafeUrlError('private_address', 'Private, local or reserved addresses cannot be audited.');

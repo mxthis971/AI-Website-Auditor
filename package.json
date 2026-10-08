@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning src/server.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
-    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 tests/",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 'tests/*.test.js'",
     "lint": "eslint .",
     "audit:cli": "node --disable-warning=ExperimentalWarning scripts/audit-cli.js"
   },

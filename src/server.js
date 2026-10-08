@@ -50,15 +50,18 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
 
   await app.register(rateLimit, { global: false, keyGenerator: (req) => req.ip });
 
+  // AdSense needs Google's ad domains; they are only allowed when AdSense is configured.
+  const ads = config.adsense?.client
+    ? ' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google'
+    : '';
+  const csp = `default-src 'self'; img-src 'self' https: data:; style-src 'self'${ads ? " 'unsafe-inline'" : ''}; script-src 'self'${ads}; connect-src 'self'${ads}; frame-src${ads || " 'none'"}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com`;
+
   app.addHook('onSend', async (req, reply, payload) => {
     reply.header('x-content-type-options', 'nosniff');
     reply.header('referrer-policy', 'strict-origin-when-cross-origin');
     reply.header('x-frame-options', 'DENY');
     reply.header('permissions-policy', 'camera=(), microphone=(), geolocation=()');
-    reply.header(
-      'content-security-policy',
-      "default-src 'self'; img-src 'self' https: data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com",
-    );
+    reply.header('content-security-policy', csp);
     return payload;
   });
 

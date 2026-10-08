@@ -77,7 +77,7 @@ export async function registerPages(app, { config, store, payments }) {
     const host = new URL(report.url).hostname;
     const score = report.data?.score.overall;
     const title = score != null ? `${host}: ${score}/100 · ${t.report.title}` : `${host} · ${t.report.title}`;
-    const body = `<section class="container"><div id="report" data-report-id="${esc(report.id)}"><div class="progress"><div class="spinner" aria-hidden="true"></div><p class="progress-text">…</p></div></div></section>`;
+    const body = `<section class="container"><div id="report" data-report-id="${esc(report.id)}"><div class="progress"><div class="spinner" aria-hidden="true"></div><p class="progress-text">…</p></div></div>${adSlot(config)}</section>`;
     return html(
       reply,
       layout({ config, lang, path: `/r/${report.id}`, title, description: `${t.report.yourScore}: ${score ?? '…'}/100. SEO, performance, accessibility, technical and content audit of ${host}.`, body, noindex: true, pageData: { page: 'report', reportId: report.id } }),
@@ -206,6 +206,12 @@ export async function registerPages(app, { config, store, payments }) {
   }
 
   // ------------------------------------------------------- robots/sitemap
+  // ads.txt tells ad buyers which AdSense account may sell ads on this site.
+  app.get('/ads.txt', (req, reply) => {
+    if (!config.adsense?.client) return reply.code(404).type('text/plain').send('Not found');
+    return reply.type('text/plain').send(`google.com, ${config.adsense.client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
+  });
+
   app.get('/robots.txt', (req, reply) =>
     reply.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\n\nSitemap: ${config.publicBaseUrl}/sitemap.xml\n`),
   );
@@ -222,4 +228,11 @@ export async function registerPages(app, { config, store, payments }) {
     if (req.url.startsWith('/api/')) return reply.code(404).send({ error: { code: 'not_found', message: 'Not found.' } });
     return html(reply, notFound(), 404);
   });
+}
+
+/** Banner area on the report page; empty (not rendered) unless AdSense is configured. */
+function adSlot(config) {
+  const { client, reportSlot } = config.adsense || {};
+  if (!client) return '';
+  return `<aside class="ad-slot" id="ad-report" aria-label="Advertisement" data-ad-client="${esc(client)}" data-ad-slot="${esc(reportSlot)}"></aside>`;
 }

@@ -3,7 +3,7 @@
 # never in this file.
 services:
   - type: web
-    name: ai-website-auditor
+    name: nig-seo-auditor
     runtime: docker
     plan: free
     healthCheckPath: /api/health
@@ -24,4 +24,9 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: STRIPE_REPORT_PRICE_ID
+        sync: false
+      # Google AdSense publisher ID (ca-pub-…) and optional report banner slot ID.
+      - key: ADSENSE_CLIENT
+        sync: false
+      - key: ADSENSE_REPORT_SLOT
         sync: false

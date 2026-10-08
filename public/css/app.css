@@ -195,3 +195,7 @@ th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border);
   .issue-body { display: block; }
   a { color: #000; }
 }
+
+/* Ad banner on the report page (only rendered when AdSense is configured). */
+.ad-slot { margin: 32px 0; min-height: 90px; text-align: center; }
+@media print { .ad-slot { display: none; } }

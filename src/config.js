@@ -26,6 +26,12 @@ export function loadConfig(overrides = {}) {
     reportRetentionDays: int('REPORT_RETENTION_DAYS', 30),
     metricsToken: process.env.METRICS_TOKEN || '',
 
+    // Google AdSense. Off unless ADSENSE_CLIENT (ca-pub-…) is set: no Google script is loaded without it.
+    adsense: {
+      client: /^ca-pub-\d{10,20}$/.test(process.env.ADSENSE_CLIENT || '') ? process.env.ADSENSE_CLIENT : '',
+      reportSlot: /^\d{5,20}$/.test(process.env.ADSENSE_REPORT_SLOT || '') ? process.env.ADSENSE_REPORT_SLOT : '',
+    },
+
     crawler: {
       userAgent:
         process.env.CRAWLER_USER_AGENT ||

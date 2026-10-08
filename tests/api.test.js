@@ -237,3 +237,25 @@ test('interrupted audits are marked failed on restart', async () => {
   assert.equal(store.getReport(id).status, 'failed');
   await app.close();
 });
+
+test('AdSense: nothing from Google without a publisher ID', async () => {
+  const app = await makeApp();
+  const home = await app.inject('/');
+  assert.doesNotMatch(home.body, /googlesyndication/);
+  assert.doesNotMatch(home.headers['content-security-policy'], /googlesyndication/);
+  assert.equal((await app.inject('/ads.txt')).statusCode, 404);
+  await app.close();
+});
+
+test('AdSense: script, CSP, ads.txt and report banner when configured', async () => {
+  const app = await makeApp({ config: { adsense: { client: 'ca-pub-1234567890123456', reportSlot: '9876543210' } } });
+  const home = await app.inject('/');
+  assert.match(home.body, /<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-1234567890123456"/);
+  assert.match(home.headers['content-security-policy'], /script-src 'self' https:\/\/pagead2\.googlesyndication\.com/);
+  const ads = await app.inject('/ads.txt');
+  assert.equal(ads.body, 'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');
+  const { id } = await runAuditViaApi(app);
+  const page = await app.inject(`/r/${id}`);
+  assert.match(page.body, /<aside class="ad-slot" id="ad-report"[^>]*data-ad-slot="9876543210"/);
+  await app.close();
+});

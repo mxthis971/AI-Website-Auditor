@@ -39,6 +39,7 @@ ${(alternates || []).map((a) => `<link rel="alternate" hreflang="${a.lang}" href
 ${jsonLd ? `<script type="application/ld+json">${jsonForHtml(jsonLd)}</script>` : ''}
 <script type="application/json" id="page-data">${jsonForHtml({ lang, ui: t, ...(pageData || {}) })}</script>
 <script src="/static/js/app.js" defer></script>
+${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(config.adsense.client)}" crossorigin="anonymous"></script>` : ''}
 </head>
 <body>
 <header class="site-header">

@@ -107,6 +107,20 @@
     claim.then(function () { poll(id); });
   }
 
+  // AdSense banner (only present when the server has an AdSense account configured).
+  var adSlot = document.getElementById('ad-report');
+  if (adSlot && adSlot.dataset.adSlot) {
+    var ins = document.createElement('ins');
+    ins.className = 'adsbygoogle';
+    ins.style.display = 'block';
+    ins.dataset.adClient = adSlot.dataset.adClient;
+    ins.dataset.adSlot = adSlot.dataset.adSlot;
+    ins.dataset.adFormat = 'auto';
+    ins.dataset.fullWidthResponsive = 'true';
+    adSlot.appendChild(ins);
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
+  }
+
   function poll(id) {
     api('GET', '/api/audits/' + id)
       .then(function (s) {

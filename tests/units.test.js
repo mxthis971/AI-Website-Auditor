@@ -155,3 +155,38 @@ test('Stripe test keys never enable payments on the public site', async () => {
   assert.equal(paymentsEnabled({ publicBaseUrl: 'https://auditeur-seo.fr', payments }), false);
   assert.equal(paymentsEnabled({ publicBaseUrl: 'https://auditeur-seo.fr', payments: { ...payments, stripeSecretKey: 'sk_live_x' } }), true);
 });
+
+test('ready-to-paste fixes are built from the page content', async () => {
+  const { buildFixes, cut, siteNameOf } = await import('../src/report/fixes.js');
+  assert.equal(cut('one two three four', 9), 'one two');
+  assert.equal(siteNameOf({ title: 'Accueil – Boulangerie Martin', og: {} }, 'x.fr'), 'Boulangerie Martin');
+  assert.equal(siteNameOf({ title: null, og: {} }, 'www.x.fr'), 'x.fr');
+  const html = (head, body) => `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
+  const para = 'Nous fabriquons du pain au levain chaque matin avec des farines locales et biologiques, venez nous voir.';
+  const site = {
+    finalUrl: 'https://boulangerie.fr/',
+    pages: [
+      { finalUrl: 'https://boulangerie.fr/', status: 200, facts: parsePage(html('<title>Accueil – Boulangerie Martin</title><meta property="og:title" content="x"><meta property="og:description" content="y">', `<h1>Bienvenue</h1><p>${para}</p>`), 'https://boulangerie.fr/') },
+      { finalUrl: 'https://boulangerie.fr/nos-pains', status: 200, facts: parsePage(html('', `<p>${para}</p><img src="/img/pain-de-campagne-2024.jpg">`), 'https://boulangerie.fr/nos-pains') },
+    ],
+  };
+  const fixes = buildFixes(site);
+  const home = fixes.find((f) => f.url === 'https://boulangerie.fr/');
+  assert.ok(home.items.some((i) => i.kind === 'description' && i.code.startsWith('<meta name="description" content="Nous fabriquons')));
+  const page = fixes.find((f) => f.url.endsWith('/nos-pains'));
+  const kinds = page.items.map((i) => i.kind);
+  assert.deepEqual(kinds, ['title', 'description', 'h1', 'og', 'alt']);
+  assert.equal(page.items[0].code, '<title>Nos pains | Boulangerie Martin</title>');
+  assert.match(page.items.find((i) => i.kind === 'alt').code, /alt="Pain de campagne"/);
+  // Text from the site is escaped in the HTML it suggests.
+  const evil = buildFixes({ finalUrl: 'https://e.fr/', pages: [{ finalUrl: 'https://e.fr/', status: 200, facts: parsePage(html('', `<h1>Hi "there" &lt;b&gt;</h1>`), 'https://e.fr/') }] });
+  assert.ok(evil[0].items.every((i) => !i.code.includes('<b>')));
+});
+
+test('CSV export: separator by language, formulas neutralised', async () => {
+  const { reportToCsv } = await import('../src/report/csv.js');
+  const view = { lang: 'fr', issues: [{ severity: 'critical', categoryLabel: 'SEO', title: '=HYPERLINK("x")', fix: 'Fix; now', affected: [{ url: 'https://a.fr/', detail: '@cmd' }] }] };
+  const csv = reportToCsv(view, { severityLabels: { critical: 'critique' } });
+  assert.ok(csv.startsWith('﻿Gravité;Catégorie'));
+  assert.match(csv, /critique;SEO;"'=HYPERLINK\(""x""\)";https:\/\/a\.fr\/;'@cmd;"Fix; now"/);
+});

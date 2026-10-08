@@ -445,3 +445,23 @@ test('a failed deep crawl keeps the results the buyer already has', async () => 
   assert.equal(r.status, 'done');
   assert.equal(r.data.score.overall, 70);
 });
+
+test('fixes and CSV export are part of the full report', async () => {
+  const app = await makeApp({ config: paymentConfig });
+  const { id } = await runAuditViaApi(app);
+  const free = (await app.inject(`/api/reports/${id}`)).json();
+  assert.deepEqual(free.fixes, []);
+  assert.ok(free.fixesCount > 0, 'the free view says how many pages have fixes');
+  assert.equal((await app.inject(`/api/reports/${id}/export.csv`)).statusCode, 402);
+  await app.close();
+
+  const beta = await makeApp();
+  const b = await runAuditViaApi(beta);
+  const full = (await beta.inject(`/api/reports/${b.id}`)).json();
+  assert.ok(full.fixes.length > 0 && full.fixes[0].items[0].code.startsWith('<'));
+  const csv = await beta.inject(`/api/reports/${b.id}/export.csv?lang=fr`);
+  assert.equal(csv.statusCode, 200);
+  assert.match(csv.headers['content-disposition'], /attachment; filename="audit-127\.0\.0\.1-/);
+  assert.ok(csv.body.split('\r\n').length > 3);
+  await beta.close();
+});

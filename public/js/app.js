@@ -216,7 +216,8 @@
         h('p', { class: 'muted small', text: date })),
       h('div', { class: 'actions no-print' },
         h('button', { class: 'button secondary', onclick: function (e) { copyLink(e.target, id); }, text: ui.report.share }),
-        h('button', { class: 'button secondary', onclick: function () { window.print(); }, text: ui.report.pdf })));
+        h('button', { class: 'button secondary', onclick: function () { window.print(); }, text: ui.report.pdf }),
+        r.full ? h('a', { class: 'button secondary', href: '/api/reports/' + id + '/export.csv?lang=' + lang + (key ? '&key=' + encodeURIComponent(key) : ''), download: '', text: ui.report.csv }) : null));
 
     var categories = h('div', { class: 'categories' }, r.score.categories.map(function (c) {
       return h('div', { class: 'category' },
@@ -250,6 +251,7 @@
       append(reportRoot, h('section', { class: 'issues' }, h('h2', { class: 'h3' }, h('span', { class: 'dot ' + group[0] }), group[1] + ' (' + items.length + ')'), items.map(issueCard)));
     });
 
+    append(reportRoot, fixesSection(r));
     if (r.lockedCount > 0) append(reportRoot, unlockBox(id));
 
     append(reportRoot, [
@@ -297,6 +299,31 @@
       list(ui.report.fixed, c.fixed, 'pass'),
       list(ui.report.added, c.added, 'critical'),
       h('p', { class: 'muted small' }, ui.report.remaining.replace('{n}', c.remaining), ' · ', h('a', { href: '/r/' + c.previousId + (lang === 'fr' ? '?lang=fr' : ''), text: ui.report.previous })));
+  }
+
+  // Paid: the exact HTML to paste on each page.
+  function fixesSection(r) {
+    if (!r.full) {
+      return r.fixesCount ? h('p', { class: 'notice' }, '🔒 ', ui.report.fixesLocked.replace('{n}', r.fixesCount)) : null;
+    }
+    if (!r.fixes || !r.fixes.length) return null;
+    return h('section', { class: 'card fixes' },
+      h('h2', { class: 'h3', text: ui.report.fixesTitle + ' (' + r.fixes.length + ')' }),
+      h('p', { class: 'muted small', text: ui.report.fixesIntro }),
+      r.fixes.map(function (page, i) {
+        return h('details', { class: 'fix-page', open: i === 0 }, h('summary', { class: 'break', text: page.url + ' (' + page.items.length + ')' }),
+          page.items.map(function (item) {
+            var code = h('code', { text: item.code });
+            var copy = h('button', { class: 'link-button no-print', text: ui.report.copy, onclick: function () {
+              var done = function () { copy.textContent = '✓ ' + ui.report.copy; };
+              if (navigator.clipboard) navigator.clipboard.writeText(item.code).then(done, function () {});
+            } });
+            return h('div', { class: 'fix-item' },
+              h('div', { class: 'fix-head' }, h('strong', { text: (ui.report.fixKinds && ui.report.fixKinds[item.kind]) || item.kind }), copy),
+              item.current ? h('p', { class: 'muted small break', text: ui.report.current + ' ' + item.current }) : null,
+              h('pre', null, code));
+          }));
+      }));
   }
 
   function recheckBox(id, r, key) {

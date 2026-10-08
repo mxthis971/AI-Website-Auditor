@@ -98,5 +98,8 @@ export function buildView(report, { lang = 'en', full = true, ai = null } = {}) 
     stats: report.stats,
     pagespeed: report.pagespeed,
     pages: full ? report.pages : report.pages.slice(0, 3),
+    // Older reports have no fixes; the free view only learns how many pages have some.
+    fixes: full ? report.fixes || [] : [],
+    fixesCount: (report.fixes || []).length,
   };
 }

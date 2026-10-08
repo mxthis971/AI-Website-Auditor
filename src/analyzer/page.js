@@ -206,6 +206,7 @@ export function parsePage(html, pageUrl) {
       description: prop('og:description') || null,
       image: prop('og:image') || null,
       url: prop('og:url') || null,
+      siteName: prop('og:site_name') || null,
       type: prop('og:type') || null,
     },
     twitterCard: meta('twitter:card') || null,
@@ -224,6 +225,8 @@ export function parsePage(html, pageUrl) {
     duplicateIds: [...duplicateIds].slice(0, 20),
     positiveTabindex: $('[tabindex]').filter((_, el) => Number($(el).attr('tabindex')) > 0).length,
     wordCount,
+    // First real paragraph: the base for a suggested meta description.
+    firstText: $body.find('p').map((_, el) => clean($(el).text())).get().find((t) => t.split(' ').length >= 12)?.slice(0, 400) || null,
     hasLoremIpsum: /lorem ipsum/i.test(bodyText),
     mixedContent: mixedContent.slice(0, 20),
     inlineStyleBytes: $('style').text().length,

@@ -233,3 +233,10 @@ th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; colo
 .compare-cat strong { font-family: var(--mono); }
 .compare-list ul { margin: 4px 0 12px; padding-left: 20px; }
 .compare-list .dot { margin-right: 8px; }
+
+/* Ready-to-paste fixes (paid reports) */
+.fix-page { border-top: 1px solid var(--border); padding: 10px 0; }
+.fix-page summary { cursor: pointer; font-weight: 600; }
+.fix-item { margin: 12px 0; }
+.fix-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.fix-item pre { white-space: pre-wrap; word-break: break-all; }

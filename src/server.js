@@ -14,6 +14,8 @@ import { AuditQueue } from './jobs.js';
 import { parseAuditUrl, UnsafeUrlError } from './security/url-guard.js';
 import { buildView } from './report/view.js';
 import { compareReports } from './report/compare.js';
+import { reportToCsv } from './report/csv.js';
+import { UI } from './i18n/ui.js';
 import { runAudit } from './audit.js';
 import { friendlyError } from './crawler/crawler.js';
 import { createAiClient, generateAiSummary } from './ai/summary.js';
@@ -155,6 +157,21 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
       comparison: paid ? await comparisonFor(report, lang) : null,
       recheck: paid ? await recheckInfo(report) : null,
     };
+  });
+
+  app.get('/api/reports/:id/export.csv', { config: { rateLimit: { max: 30, timeWindow: '1 hour' } } }, async (req, reply) => {
+    const report = await loadReport(req, reply);
+    if (!report) return;
+    if (!hasFullAccess(req, report, req.query.key)) return reply.code(402).send({ error: { code: 'payment_required', message: 'The CSV export is part of the full report.' } });
+    const lang = req.query.lang === 'fr' ? 'fr' : req.query.lang === 'en' ? 'en' : report.lang;
+    const view = buildView(report.data, { lang, full: true });
+    const host = new URL(report.url).hostname.replace(/[^\w.-]/g, '');
+    count('csv_exports');
+    return reply
+      .header('content-type', 'text/csv; charset=utf-8')
+      .header('content-disposition', `attachment; filename="audit-${host}-${report.id}.csv"`)
+      .header('cache-control', 'private, no-store')
+      .send(reportToCsv(view, { severityLabels: UI[lang].severity }));
   });
 
   // ------------------------------------------------------- Paid extras

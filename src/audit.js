@@ -7,6 +7,7 @@ import { runChecks } from './analyzer/checks.js';
 import { scoreResults } from './analyzer/scoring.js';
 import { runPagespeed } from './analyzer/pagespeed.js';
 import { parseAuditUrl } from './security/url-guard.js';
+import { buildFixes } from './report/fixes.js';
 
 export const REPORT_VERSION = 1;
 
@@ -57,6 +58,8 @@ export async function runAudit(url, { config, onProgress = () => {}, resolver, l
       sitemap: site.sitemap.found ? { url: site.sitemap.url, urls: site.sitemap.urlCount, valid: site.sitemap.valid } : null,
     },
     pagespeed: pagespeed?.metrics ? pagespeed : null,
+    // Ready-to-paste HTML per page (shown in the full report only).
+    fixes: buildFixes(site),
     pages: site.pages.map((p) => ({
       url: p.finalUrl,
       status: p.status,

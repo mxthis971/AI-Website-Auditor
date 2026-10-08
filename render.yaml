@@ -35,5 +35,9 @@ services:
         sync: false
       - key: GOOGLE_SITE_VERIFICATION
         value: fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
       - key: CONTACT_EMAIL
         value: contact@auditeur-seo.fr

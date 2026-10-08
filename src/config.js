@@ -21,6 +21,8 @@ export function loadConfig(overrides = {}) {
     host: process.env.HOST || '0.0.0.0',
     publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
     databasePath: process.env.DATABASE_PATH || './data/auditor.db',
+    // Hosted database (Turso). When set, reports survive redeploys; DATABASE_PATH is then unused.
+    turso: { url: /^(libsql|https):\/\/[\w.-]+$/.test(process.env.TURSO_DATABASE_URL || '') ? process.env.TURSO_DATABASE_URL : '', authToken: process.env.TURSO_AUTH_TOKEN || '' },
     logLevel: process.env.LOG_LEVEL || 'info',
     // Reports older than this are deleted automatically (data minimisation).
     reportRetentionDays: int('REPORT_RETENTION_DAYS', 30),

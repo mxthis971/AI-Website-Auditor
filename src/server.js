@@ -35,14 +35,17 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     },
   });
 
-  store ??= new Store(config.databasePath);
-  const stale = store.failStaleJobs();
+  store ??= new Store(config.databasePath, config.turso);
+  const stale = await store.failStaleJobs();
   if (stale) app.log.warn({ count: stale }, 'marked interrupted audits as failed');
   const queue = new AuditQueue({ store, config, log: app.log, resolver });
   const ai = aiClient === undefined ? createAiClient(config) : aiClient;
   const payments = paymentsEnabled(config);
   const started = Date.now();
   let toolsRunning = 0;
+
+  // Usage counters never block or break a request.
+  const count = (name) => store.increment(name).catch((err) => app.log.warn({ err: err.message, name }, 'counter not saved'));
 
   app.decorate('store', store);
   app.decorate('queue', queue);
@@ -83,7 +86,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   // ---------------------------------------------------------------- API
-  app.get('/api/health', async () => ({ ok: true, uptimeSec: Math.round((Date.now() - started) / 1000) }));
+  app.get('/api/health', async () => ({ ok: true, uptimeSec: Math.round((Date.now() - started) / 1000), storage: store.kind }));
 
   app.get('/api/config', async () => ({
     paymentsEnabled: payments,
@@ -107,21 +110,21 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
       if (queue.isFull()) {
         return reply.code(503).send({ error: { code: 'busy', message: 'Too many audits are running right now. Please try again in a minute.' } });
       }
-      const { id, ownerKey } = store.createReport({ url: normalised.href, lang: lang === 'fr' ? 'fr' : 'en' });
+      const { id, ownerKey } = await store.createReport({ url: normalised.href, lang: lang === 'fr' ? 'fr' : 'en' });
       queue.enqueue(id, normalised.href);
-      store.increment('audits_requested');
+      count('audits_requested');
       return reply.code(202).send({ id, ownerKey, status: 'queued', reportUrl: `/r/${id}` });
     },
   );
 
   app.get('/api/audits/:id', { config: { rateLimit: { max: 600, timeWindow: '1 minute' } } }, async (req, reply) => {
-    const report = ID_RE.test(req.params.id) ? store.getReport(req.params.id) : null;
+    const report = ID_RE.test(req.params.id) ? await store.getReport(req.params.id) : null;
     if (!report) return reply.code(404).send({ error: { code: 'not_found', message: 'Audit not found.' } });
     return { id: report.id, url: report.url, status: report.status, progress: report.progress, error: report.error, score: report.data?.score.overall ?? null };
   });
 
-  const loadReport = (req, reply) => {
-    const report = ID_RE.test(req.params.id) ? store.getReport(req.params.id) : null;
+  const loadReport = async (req, reply) => {
+    const report = ID_RE.test(req.params.id) ? await store.getReport(req.params.id) : null;
     if (!report || report.status !== 'done') {
       reply.code(404).send({ error: { code: 'not_found', message: 'Report not found or not ready yet.' } });
       return null;
@@ -131,7 +134,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   const hasFullAccess = (report, key) => !payments || (report.paid && safeEqualHash(key, report.accessKeyHash));
 
   app.get('/api/reports/:id', { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } }, async (req, reply) => {
-    const report = loadReport(req, reply);
+    const report = await loadReport(req, reply);
     if (!report) return;
     const lang = req.query.lang === 'fr' ? 'fr' : req.query.lang === 'en' ? 'en' : report.lang;
     const full = hasFullAccess(report, req.query.key || req.headers['x-access-key']);
@@ -140,7 +143,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   app.post('/api/reports/:id/ai-summary', { config: { rateLimit: { max: 5, timeWindow: '1 hour' } } }, async (req, reply) => {
-    const report = loadReport(req, reply);
+    const report = await loadReport(req, reply);
     if (!report) return;
     if (!ai) return reply.code(501).send({ error: { code: 'ai_disabled', message: 'AI explanations are not configured on this server.' } });
     if (!hasFullAccess(report, req.body?.key)) return reply.code(402).send({ error: { code: 'payment_required', message: 'The AI action plan is part of the full report.' } });
@@ -148,8 +151,8 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     if (report.ai?.[lang]) return report.ai[lang];
     try {
       const summary = await generateAiSummary(report.data, { client: ai, model: config.ai.model, lang });
-      store.saveAi(report.id, { ...(report.ai || {}), [lang]: summary });
-      store.increment('ai_summaries');
+      await store.saveAi(report.id, { ...(report.ai || {}), [lang]: summary });
+      count('ai_summaries');
       return summary;
     } catch (err) {
       req.log.error({ err: err.message }, 'ai summary failed');
@@ -158,20 +161,20 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   app.delete('/api/reports/:id', async (req, reply) => {
-    const report = ID_RE.test(req.params.id) ? store.getReport(req.params.id) : null;
+    const report = ID_RE.test(req.params.id) ? await store.getReport(req.params.id) : null;
     if (!report) return reply.code(404).send({ error: { code: 'not_found', message: 'Report not found.' } });
     if (!safeEqualHash(req.headers['x-owner-key'], report.ownerKeyHash)) {
       return reply.code(403).send({ error: { code: 'forbidden', message: 'Only the person who ran this audit can delete it.' } });
     }
-    store.deleteReport(report.id);
+    await store.deleteReport(report.id);
     return { deleted: true };
   });
 
   // ------------------------------------------------------------ Payments
   app.post('/api/reports/:id/checkout', { config: { rateLimit: { max: 20, timeWindow: '1 hour' } } }, async (req, reply) => {
-    const report = loadReport(req, reply);
+    const report = await loadReport(req, reply);
     if (!report) return;
-    store.increment('checkout_clicks');
+    count('checkout_clicks');
     if (!payments) return reply.code(501).send({ error: { code: 'payments_disabled', message: 'Payments are not enabled yet.' } });
     const session = await createCheckoutSession({
       secretKey: config.payments.stripeSecretKey,
@@ -185,7 +188,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   app.post('/api/reports/:id/claim', { config: { rateLimit: { max: 20, timeWindow: '1 hour' } } }, async (req, reply) => {
-    const report = loadReport(req, reply);
+    const report = await loadReport(req, reply);
     if (!report) return;
     if (!payments) return reply.code(501).send({ error: { code: 'payments_disabled', message: 'Payments are not enabled.' } });
     let session;
@@ -197,7 +200,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     if (session.payment_status !== 'paid' || session.metadata?.report_id !== report.id) {
       return reply.code(402).send({ error: { code: 'not_paid', message: 'This payment is not completed for this report.' } });
     }
-    const accessKey = store.markPaid(report.id, session.id);
+    const accessKey = await store.markPaid(report.id, session.id);
     return { accessKey };
   });
 
@@ -212,9 +215,9 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
       const event = JSON.parse(req.body);
       if (event.type === 'checkout.session.completed' && event.data?.object?.payment_status === 'paid') {
         const reportId = event.data.object.metadata?.report_id;
-        const report = reportId && ID_RE.test(reportId) ? store.getReport(reportId) : null;
-        if (report && !report.paid) store.markPaid(report.id, event.data.object.id);
-        store.increment('payments_completed');
+        const report = reportId && ID_RE.test(reportId) ? await store.getReport(reportId) : null;
+        if (report && !report.paid) await store.markPaid(report.id, event.data.object.id);
+        count('payments_completed');
         req.log.info({ reportId }, 'payment completed');
       }
       return { received: true };
@@ -224,7 +227,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   // Demand test: counts clicks on "coming soon" offers. No personal data.
   app.post('/api/interest', { config: { rateLimit: { max: 10, timeWindow: '1 hour' } } }, async (req) => {
     const plan = ['report', 'pro'].includes(req.body?.plan) ? req.body.plan : 'other';
-    store.increment(`interest_${plan}`);
+    count(`interest_${plan}`);
     return { ok: true };
   });
 
@@ -240,7 +243,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     try {
       const toolConfig = { ...config, crawler: { ...config.crawler, ...tool.crawl, auditTimeoutMs: Math.min(config.crawler.auditTimeoutMs, 45_000) } };
       const report = await runAudit(req.body?.url, { config: toolConfig, resolver, log: req.log, onlyChecks: tool.checks });
-      store.increment(`tool_${req.params.tool}`);
+      count(`tool_${req.params.tool}`);
       return {
         url: report.url,
         score: report.score,
@@ -266,9 +269,9 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
       uptimeSec: Math.round((Date.now() - started) / 1000),
       memoryMb: Math.round(process.memoryUsage().rss / 1048576),
       queue: { running: queue.running, waiting: queue.waiting.length },
-      last24h: store.stats(Date.now() - 86_400_000),
-      allTime: store.stats(0),
-      counters: store.counters(),
+      last24h: await store.stats(Date.now() - 86_400_000),
+      allTime: await store.stats(0),
+      counters: await store.counters(),
     };
   });
 
@@ -284,9 +287,13 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   // Data retention: delete old free reports once a day.
-  const cleanup = () => {
-    const removed = store.deleteOlderThan(config.reportRetentionDays);
-    if (removed) app.log.info({ removed }, 'deleted expired reports');
+  const cleanup = async () => {
+    try {
+      const removed = await store.deleteOlderThan(config.reportRetentionDays);
+      if (removed) app.log.info({ removed }, 'deleted expired reports');
+    } catch (err) {
+      app.log.error({ err: err.message }, 'report cleanup failed');
+    }
   };
   const timer = setInterval(cleanup, 86_400_000);
   timer.unref();

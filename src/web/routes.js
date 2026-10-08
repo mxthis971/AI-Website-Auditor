@@ -96,8 +96,8 @@ export async function registerPages(app, { config, store, payments }) {
 
   // Shared report page. Indexing is disabled: reports are user content,
   // not pages we want in Google (avoids thousands of thin pages).
-  app.get('/r/:id', (req, reply) => {
-    const report = ID_RE.test(req.params.id) ? store.getReport(req.params.id) : null;
+  app.get('/r/:id', async (req, reply) => {
+    const report = ID_RE.test(req.params.id) ? await store.getReport(req.params.id) : null;
     if (!report) return html(reply, notFound(langFromCookie(req.headers.cookie) || 'en'), 404);
     const wanted = req.query.lang || langFromCookie(req.headers.cookie) || report.lang;
     const lang = wanted === 'fr' ? 'fr' : 'en';

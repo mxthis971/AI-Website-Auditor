@@ -143,7 +143,7 @@ test('Stripe webhook requires a valid signature', async () => {
   assert.equal(bad.statusCode, 400);
   const good = await app.inject({ method: 'POST', url: '/api/stripe/webhook', payload, headers: { 'content-type': 'application/json', 'stripe-signature': signPayloadForTests(payload, 'whsec_test') } });
   assert.equal(good.statusCode, 200);
-  assert.equal(app.store.getReport(id).paid, true);
+  assert.equal((await app.store.getReport(id)).paid, true);
   await app.close();
 });
 
@@ -204,7 +204,7 @@ test('metrics require a token and expose basic counters', async () => {
   assert.ok(m.allTime.avgDurationMs >= 0);
   assert.equal(m.counters.audits_requested, 1);
   await app.inject({ method: 'POST', url: '/api/interest', payload: { plan: 'pro' } });
-  assert.equal(app.store.counters().interest_pro, 1);
+  assert.equal((await app.store.counters()).interest_pro, 1);
   await app.close();
 });
 
@@ -231,10 +231,10 @@ test('pages render with SEO tags and security headers', async () => {
 
 test('interrupted audits are marked failed on restart', async () => {
   const store = new Store(':memory:');
-  const { id } = store.createReport({ url: 'https://example.com/', lang: 'en' });
-  store.setStatus(id, 'running', { phase: 'crawling' });
+  const { id } = await store.createReport({ url: 'https://example.com/', lang: 'en' });
+  await store.setStatus(id, 'running', { phase: 'crawling' });
   const app = await buildApp({ config: makeConfig(), store, logger: false, aiClient: null });
-  assert.equal(store.getReport(id).status, 'failed');
+  assert.equal((await store.getReport(id)).status, 'failed');
   await app.close();
 });
 

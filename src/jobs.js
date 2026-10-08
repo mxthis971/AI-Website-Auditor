@@ -28,7 +28,7 @@ export class AuditQueue {
 
   enqueue(id, url) {
     this.waiting.push({ id, url });
-    this.store.setStatus(id, 'queued', { phase: 'queued', position: this.waiting.length });
+    this.#save(this.store.setStatus(id, 'queued', { phase: 'queued', position: this.waiting.length }));
     this.#pump();
   }
 
@@ -46,22 +46,26 @@ export class AuditQueue {
 
   async #run({ id, url }) {
     const started = Date.now();
-    this.store.setStatus(id, 'running', { phase: 'starting', pagesCrawled: 0 });
+    await this.store.setStatus(id, 'running', { phase: 'starting', pagesCrawled: 0 }).catch((err) => this.log?.warn({ auditId: id, err: err.message }, 'status not saved'));
     try {
       const report = await this.runner(url, {
         config: this.config,
         resolver: this.resolver,
         log: this.log,
-        onProgress: (p) => this.store.setStatus(id, 'running', p),
+        onProgress: (p) => this.#save(this.store.setStatus(id, 'running', p)),
       });
-      this.store.saveResult(id, report);
+      await this.store.saveResult(id, report);
       this.log?.info({ auditId: id, durationMs: report.durationMs, pages: report.stats.pagesCrawled, score: report.score.overall }, 'audit done');
     } catch (err) {
       const error = friendlyError(err);
       if (error.code === 'internal_error') this.log?.error({ auditId: id, err: err.stack }, 'audit crashed');
       else this.log?.info({ auditId: id, code: error.code }, 'audit failed');
-      this.store.saveError(id, error, Date.now() - started);
+      await this.store.saveError(id, error, Date.now() - started).catch((e) => this.log?.error({ auditId: id, err: e.message }, 'error not saved'));
     }
+  }
+
+  #save(promise) {
+    promise.catch((err) => this.log?.warn({ err: err.message }, 'status not saved'));
   }
 
   /** Resolves when no job is waiting or running (used by tests and shutdown). */

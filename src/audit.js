@@ -6,13 +6,16 @@ import { crawlSite } from './crawler/crawler.js';
 import { runChecks } from './analyzer/checks.js';
 import { scoreResults } from './analyzer/scoring.js';
 import { runPagespeed } from './analyzer/pagespeed.js';
+import { parseAuditUrl } from './security/url-guard.js';
 
 export const REPORT_VERSION = 1;
 
 export async function runAudit(url, { config, onProgress = () => {}, resolver, log, onlyChecks = null } = {}) {
+  // Validate first: nothing (not even Google) is asked to fetch an unsafe URL.
+  const safeUrl = parseAuditUrl(url, { allowPrivateNetworks: config.crawler.allowPrivateNetworks });
   // PageSpeed runs on Google's servers in parallel with our crawl.
   const pagespeedPromise = config.pagespeed.apiKey
-    ? runPagespeed(String(url).trim().match(/^https?:\/\//i) ? url : `https://${String(url).trim()}`, config.pagespeed).catch((err) => {
+    ? runPagespeed(safeUrl.href, config.pagespeed).catch((err) => {
         log?.warn({ err: err.message }, 'pagespeed failed');
         return { error: 'unavailable' };
       })

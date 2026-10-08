@@ -52,7 +52,7 @@ ${(alternates || []).map((a) => `<link rel="alternate" hreflang="${a.lang}" href
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
-<meta property="og:image" content="${esc(ogImage || `${base}/static/img/og.png`)}">
+<meta property="og:image" content="${esc(ogImage || `${base}/static/img/${lang === 'fr' ? 'og-fr' : 'og'}.png`)}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/css/app.css?v=${CSS_V}">

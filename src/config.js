@@ -98,6 +98,8 @@ export function loadConfig(overrides = {}) {
       stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
       stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
       reportPriceId: process.env.STRIPE_REPORT_PRICE_ID || '',
+      // Secret link that turns on Stripe *test* checkout for one browser only (see paymentsTestPreview).
+      testPreviewToken: /^[\w-]{24,200}$/.test((process.env.STRIPE_TEST_PREVIEW_TOKEN || '').trim()) ? process.env.STRIPE_TEST_PREVIEW_TOKEN.trim() : '',
     },
   };
 
@@ -115,11 +117,23 @@ function deepMerge(base, extra) {
   return base;
 }
 
+const isLocal = (config) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(config.publicBaseUrl || '');
+const paymentsConfigured = (p) => Boolean(p.stripeSecretKey && p.stripeWebhookSecret && p.reportPriceId);
+
+/** Checkout for every visitor. */
 export function paymentsEnabled(config) {
   const p = config.payments;
   // Test keys (sk_test_) only work on a local machine: on the public site they
   // would show a fake checkout to real visitors.
-  const local = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(config.publicBaseUrl || '');
-  if (p.stripeSecretKey.startsWith('sk_test_') && !local) return false;
-  return Boolean(p.stripeSecretKey && p.stripeWebhookSecret && p.reportPriceId);
+  if (p.stripeSecretKey.startsWith('sk_test_') && !isLocal(config)) return false;
+  return paymentsConfigured(p);
+}
+
+/**
+ * Test keys on the public site: checkout is shown only to a browser that opened
+ * the secret /stripe-test link. Every other visitor keeps the free beta.
+ */
+export function paymentsTestPreview(config) {
+  const p = config.payments;
+  return p.stripeSecretKey.startsWith('sk_test_') && !isLocal(config) && Boolean(p.testPreviewToken) && paymentsConfigured(p);
 }

@@ -8,8 +8,8 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import rateLimit from '@fastify/rate-limit';
 
-import { loadConfig, paymentsEnabled } from './config.js';
-import { Store, safeEqualHash } from './storage/db.js';
+import { loadConfig, paymentsEnabled, paymentsTestPreview } from './config.js';
+import { Store, safeEqualHash, hashKey } from './storage/db.js';
 import { AuditQueue } from './jobs.js';
 import { parseAuditUrl, UnsafeUrlError } from './security/url-guard.js';
 import { buildView } from './report/view.js';
@@ -42,6 +42,10 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   const queue = new AuditQueue({ store, config, log: app.log, resolver });
   const ai = aiClient === undefined ? createAiClient(config) : aiClient;
   const payments = paymentsEnabled(config);
+  // Stripe test mode on the public site, only for the browser holding the secret cookie.
+  const testPreviewHash = paymentsTestPreview(config) ? hashKey(config.payments.testPreviewToken) : null;
+  const previewCookie = (req) => /(?:^|;\s*)stripe_test=([\w-]+)/.exec(String(req.headers.cookie || ''))?.[1];
+  const paysFor = (req) => payments || Boolean(testPreviewHash && safeEqualHash(previewCookie(req), testPreviewHash));
   const started = Date.now();
   let toolsRunning = 0;
 
@@ -89,8 +93,8 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   // ---------------------------------------------------------------- API
   app.get('/api/health', async () => ({ ok: true, uptimeSec: Math.round((Date.now() - started) / 1000), storage: store.kind, ...(store.kind === 'sqlite' && config.turso?.problem ? { storageNote: config.turso.problem } : {}) }));
 
-  app.get('/api/config', async () => ({
-    paymentsEnabled: payments,
+  app.get('/api/config', async (req) => ({
+    paymentsEnabled: paysFor(req),
     aiEnabled: Boolean(ai),
     pagespeedEnabled: Boolean(config.pagespeed.apiKey),
     limits: { maxPages: config.crawler.maxPages, maxDepth: config.crawler.maxDepth },
@@ -132,22 +136,22 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     }
     return report;
   };
-  const hasFullAccess = (report, key) => !payments || (report.paid && safeEqualHash(key, report.accessKeyHash));
+  const hasFullAccess = (req, report, key) => !paysFor(req) || (report.paid && safeEqualHash(key, report.accessKeyHash));
 
   app.get('/api/reports/:id', { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } }, async (req, reply) => {
     const report = await loadReport(req, reply);
     if (!report) return;
     const lang = req.query.lang === 'fr' ? 'fr' : req.query.lang === 'en' ? 'en' : report.lang;
-    const full = hasFullAccess(report, req.query.key || req.headers['x-access-key']);
+    const full = hasFullAccess(req, report, req.query.key || req.headers['x-access-key']);
     const aiForLang = report.ai?.[lang] || null;
-    return { id: report.id, paymentsEnabled: payments, aiEnabled: Boolean(ai), ...buildView(report.data, { lang, full, ai: aiForLang }) };
+    return { id: report.id, paymentsEnabled: paysFor(req), aiEnabled: Boolean(ai), ...buildView(report.data, { lang, full, ai: aiForLang }) };
   });
 
   app.post('/api/reports/:id/ai-summary', { config: { rateLimit: { max: 5, timeWindow: '1 hour' } } }, async (req, reply) => {
     const report = await loadReport(req, reply);
     if (!report) return;
     if (!ai) return reply.code(501).send({ error: { code: 'ai_disabled', message: 'AI explanations are not configured on this server.' } });
-    if (!hasFullAccess(report, req.body?.key)) return reply.code(402).send({ error: { code: 'payment_required', message: 'The AI action plan is part of the full report.' } });
+    if (!hasFullAccess(req, report, req.body?.key)) return reply.code(402).send({ error: { code: 'payment_required', message: 'The AI action plan is part of the full report.' } });
     const lang = req.body?.lang === 'fr' ? 'fr' : 'en';
     if (report.ai?.[lang]) return report.ai[lang];
     try {
@@ -172,11 +176,28 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   });
 
   // ------------------------------------------------------------ Payments
+  // Secret link: /stripe-test?token=… turns test checkout on for this browser,
+  // /stripe-test?off=1 turns it off. Anyone else gets a 404.
+  app.get('/stripe-test', { config: { rateLimit: { max: 10, timeWindow: '1 hour' } } }, async (req, reply) => {
+    const notFound = () => reply.code(404).send({ error: { code: 'not_found', message: 'Not found.' } });
+    if (!testPreviewHash) return notFound();
+    const secure = req.protocol === 'https' ? '; Secure' : '';
+    reply.header('cache-control', 'no-store');
+    if (req.query.off) {
+      reply.header('set-cookie', `stripe_test=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure}`);
+      return reply.redirect('/fr/', 302);
+    }
+    const token = String(req.query.token || '');
+    if (!/^[\w-]+$/.test(token) || !safeEqualHash(token, testPreviewHash)) return notFound();
+    reply.header('set-cookie', `stripe_test=${token}; Path=/; Max-Age=${7 * 24 * 3600}; HttpOnly; SameSite=Lax${secure}`);
+    return reply.redirect('/fr/', 302);
+  });
+
   app.post('/api/reports/:id/checkout', { config: { rateLimit: { max: 20, timeWindow: '1 hour' } } }, async (req, reply) => {
     const report = await loadReport(req, reply);
     if (!report) return;
     count('checkout_clicks');
-    if (!payments) return reply.code(501).send({ error: { code: 'payments_disabled', message: 'Payments are not enabled yet.' } });
+    if (!paysFor(req)) return reply.code(501).send({ error: { code: 'payments_disabled', message: 'Payments are not enabled yet.' } });
     const session = await createCheckoutSession({
       secretKey: config.payments.stripeSecretKey,
       priceId: config.payments.reportPriceId,
@@ -191,7 +212,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   app.post('/api/reports/:id/claim', { config: { rateLimit: { max: 20, timeWindow: '1 hour' } } }, async (req, reply) => {
     const report = await loadReport(req, reply);
     if (!report) return;
-    if (!payments) return reply.code(501).send({ error: { code: 'payments_disabled', message: 'Payments are not enabled.' } });
+    if (!paysFor(req)) return reply.code(501).send({ error: { code: 'payments_disabled', message: 'Payments are not enabled.' } });
     let session;
     try {
       session = await retrieveCheckoutSession({ secretKey: config.payments.stripeSecretKey, sessionId: String(req.body?.sessionId || ''), fetchImpl });
@@ -209,7 +230,7 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     // Stripe signs the exact raw bytes, so this route needs the unparsed body.
     scope.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => done(null, body));
     scope.post('/api/stripe/webhook', async (req, reply) => {
-      if (!payments) return reply.code(501).send({ error: 'payments_disabled' });
+      if (!payments && !testPreviewHash) return reply.code(501).send({ error: 'payments_disabled' });
       if (!verifyWebhookSignature(req.body, req.headers['stripe-signature'], config.payments.stripeWebhookSecret)) {
         return reply.code(400).send({ error: 'invalid_signature' });
       }

@@ -353,3 +353,32 @@ test('every page in the sitemap exists, with a French version linked by hreflang
   assert.match((await app.inject('/fr/nimporte-quoi')).body, /Page introuvable/);
   await app.close();
 });
+
+test('Stripe test keys on the public site: checkout only for the browser with the secret link', async () => {
+  const token = 'preview-token-abcdefghijklmnop';
+  const fetchImpl = async () => ({ ok: true, json: async () => ({ id: 'cs_test_1', url: 'https://checkout.stripe.com/pay/cs_test_1' }) });
+  const app = await makeApp({ config: { publicBaseUrl: 'https://auditeur-seo.fr', payments: { ...paymentConfig.payments, testPreviewToken: token } }, fetchImpl });
+  const { id } = await runAuditViaApi(app);
+
+  // Ordinary visitor: free beta, no checkout.
+  assert.equal((await app.inject(`/api/reports/${id}`)).json().full, true);
+  assert.equal((await app.inject({ method: 'POST', url: `/api/reports/${id}/checkout`, payload: {} })).statusCode, 501);
+  assert.equal((await app.inject('/stripe-test?token=wrong-token-abcdefghijklmn')).statusCode, 404);
+
+  // Secret link sets an HttpOnly cookie; that browser sees the paid flow.
+  const link = await app.inject(`/stripe-test?token=${token}`);
+  assert.equal(link.statusCode, 302);
+  assert.match(link.headers['set-cookie'], /stripe_test=.+HttpOnly/);
+  const cookie = `stripe_test=${token}`;
+  assert.equal((await app.inject({ url: `/api/reports/${id}`, headers: { cookie } })).json().full, false);
+  const checkout = await app.inject({ method: 'POST', url: `/api/reports/${id}/checkout`, payload: {}, headers: { cookie } });
+  assert.match(checkout.json().checkoutUrl, /checkout\.stripe\.com/);
+  assert.match((await app.inject('/stripe-test?off=1')).headers['set-cookie'], /Max-Age=0/);
+  await app.close();
+});
+
+test('without a preview token, the secret link does not exist', async () => {
+  const app = await makeApp({ config: { publicBaseUrl: 'https://auditeur-seo.fr', ...paymentConfig } });
+  assert.equal((await app.inject('/stripe-test?token=anything-abcdefghijklmnopq')).statusCode, 404);
+  await app.close();
+});

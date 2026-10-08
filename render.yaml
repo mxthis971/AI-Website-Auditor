@@ -25,6 +25,9 @@ services:
         sync: false
       - key: STRIPE_REPORT_PRICE_ID
         sync: false
+      # With sk_test_ keys: secret for the /stripe-test?token=… link (test checkout for one browser only).
+      - key: STRIPE_TEST_PREVIEW_TOKEN
+        sync: false
       # Google AdSense publisher ID (ca-pub-…) and optional report banner slot ID.
       # Public IDs (not secrets): AdSense publisher and Search Console token.
       - key: ADSENSE_CLIENT

@@ -19,7 +19,7 @@ if [ "${1:-}" = deployed ]; then
   echo "--- health"; curl -sS -m 30 "$BASE_URL/api/health"; echo
   echo "--- robots.txt"; curl -sS -m 30 "$BASE_URL/robots.txt"
   echo "--- security headers on /"; curl -sS -m 30 -D - -o /dev/null "$BASE_URL/" | grep -iE '^(content-security|strict-transport|x-content|x-frame|referrer)'
-  echo "--- Google tags on /"; curl -sS -m 30 "$BASE_URL/" | grep -oE '<meta name="google-site-verification"[^>]*>|<script async src="https://pagead2[^"]*"' || echo "(none)"
+  echo "--- Google + Cloudflare tags on /"; curl -sS -m 30 "$BASE_URL/" | grep -oE '<meta name="google-site-verification"[^>]*>|<script async src="https://pagead2[^"]*"|data-cf-beacon=[^>]*>' || echo "(none)"
   echo "--- ads.txt"; curl -sS -m 30 "$BASE_URL/ads.txt"; echo
   echo "--- audit through the API"
   res=$(curl -sS -m 30 -H 'content-type: application/json' -d '{"url":"https://example.com"}' "$BASE_URL/api/audits")

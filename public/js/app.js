@@ -110,13 +110,14 @@
   // ------------------------------------------------------------- AdSense
   // Ads only exist when the server has an AdSense account configured (data.ads).
   // The AdSense script itself is loaded in <head>; each new <ins> block needs one push({}).
+  // Without a slot ID there is no manual block: Auto ads (set in AdSense) place ads instead.
   function adUnit(slot) {
-    if (!data.ads) return null;
+    if (!data.ads || !slot) return null;
     var ins = document.createElement('ins');
     ins.className = 'adsbygoogle';
     ins.style.display = 'block';
     ins.dataset.adClient = data.ads.client;
-    if (slot) ins.dataset.adSlot = slot;
+    ins.dataset.adSlot = slot;
     ins.dataset.adFormat = 'auto';
     ins.dataset.fullWidthResponsive = 'true';
     return h('aside', { class: 'ad-slot no-print', 'aria-label': lang === 'fr' ? 'Publicité' : 'Advertisement' },

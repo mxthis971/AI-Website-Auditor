@@ -4,6 +4,7 @@
 import { UI } from '../i18n/ui.js';
 import { TOOLS, TOOL_SLUGS } from './tools.js';
 import { TOOLS_FR, TOOL_BY_FR_SLUG } from './tools-fr.js';
+import { GUIDES_FR, GUIDE_BY_SLUG } from './guides-fr.js';
 import { layout, auditForm, esc } from './layout.js';
 import { CATEGORY_WEIGHTS, PENALTY } from '../analyzer/scoring.js';
 import { CATALOG, CATEGORY_LABELS, describe } from '../analyzer/catalog.js';
@@ -161,6 +162,7 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
   <h2>${esc(t.tool.faq)}</h2>
   ${tool.faq.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('')}
   <div class="cta-box"><h2 class="h3">${esc(t.tool.ctaTitle)}</h2><p>${esc(fill(t.tool.ctaText))}</p><a class="button" href="${lang === 'fr' ? '/fr/' : '/'}">${esc(t.tool.ctaButton)}</a></div>
+  ${lang === 'fr' && GUIDES_FR.some((g) => g.tool === key) ? `<p>Pour aller plus loin : ${GUIDES_FR.filter((g) => g.tool === key).map((g) => `<a href="/fr/guides/${g.slug}">${esc(g.h1)}</a>`).join(' · ')}</p>` : ''}
   <p class="muted small">${esc(t.tool.others)}${lang === 'fr' ? ' :' : ':'} ${TOOL_SLUGS.filter((k) => k !== key).map((k) => `<a href="${toolPath(lang, k)}">${esc(toolText(lang, k).name)}</a>`).join(' · ')}</p>
 </article>`;
     return layout({
@@ -175,6 +177,43 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
       pageData: { page: 'tool', tool: key, showOutline: Boolean(TOOLS[key].showOutline), showSocial: Boolean(TOOLS[key].showSocial), showImages: Boolean(TOOLS[key].showImages) },
     });
   };
+
+  // --------------------------------------------------------------- Guides
+  // French only: practical SEO guides, each linked to the matching free tool.
+  const guidesIndex = () => {
+    const body = `<section class="container narrow">
+  <h1>Guides SEO pratiques</h1>
+  <p class="lead">Des explications simples, avec exemples, pour corriger vous-même les problèmes les plus fréquents d’un site web.</p>
+  <div class="cards two">${GUIDES_FR.map((g) => `<a class="card link-card" href="/fr/guides/${g.slug}"><h2 class="h3">${esc(g.h1)}</h2><p>${esc(g.description)}</p></a>`).join('')}</div>
+  <p>Envie de tout vérifier d’un coup ? <a href="/fr/">Lancez un audit gratuit de votre site</a>.</p>
+</section>`;
+    return layout({ config, lang: 'fr', path: '/fr/guides/', title: 'Guides SEO pratiques et gratuits · Auditeur SEO', description: 'Balise title, meta description, robots.txt, sitemap, titres H1-H2, vitesse : des guides SEO clairs, avec exemples, pour améliorer votre site.', alternates: [{ lang: 'fr', path: '/fr/guides/' }], body, pageData: { page: 'guides' } });
+  };
+  const guidePage = (g) => {
+    const tool = toolText('fr', g.tool);
+    const body = `<article class="container narrow prose guide">
+  <p class="eyebrow">Guide SEO</p>
+  <h1>${esc(g.h1)}</h1>
+  <p class="lead">${esc(g.intro)}</p>
+  ${g.body}
+  <div class="cta-box"><h2 class="h3">Vérifiez votre site maintenant</h2><p>${esc(tool.name)} : un test gratuit, sans inscription, qui contrôle exactement ce point sur votre site.</p><a class="button" href="${toolPath('fr', g.tool)}">${esc(tool.name)}</a></div>
+  <p class="muted small">Autres guides : ${GUIDES_FR.filter((o) => o.slug !== g.slug).map((o) => `<a href="/fr/guides/${o.slug}">${esc(o.h1)}</a>`).join(' · ')}</p>
+</article>`;
+    return layout({
+      config,
+      lang: 'fr',
+      path: `/fr/guides/${g.slug}`,
+      title: g.title,
+      description: g.description,
+      alternates: [{ lang: 'fr', path: `/fr/guides/${g.slug}` }],
+      body,
+      jsonLd: { '@context': 'https://schema.org', '@type': 'Article', headline: g.h1, description: g.description, inLanguage: 'fr', mainEntityOfPage: `${config.publicBaseUrl}/fr/guides/${g.slug}`, publisher: { '@type': 'Organization', name: 'Auditeur SEO', url: config.publicBaseUrl } },
+      pageData: { page: 'guide' },
+    });
+  };
+  app.get('/fr/guides', (req, reply) => reply.redirect('/fr/guides/', 301));
+  app.get('/fr/guides/', (req, reply) => html(reply, guidesIndex()));
+  app.get('/fr/guides/:slug', (req, reply) => (Object.hasOwn(GUIDE_BY_SLUG, req.params.slug) ? html(reply, guidePage(GUIDE_BY_SLUG[req.params.slug])) : html(reply, notFound('fr'), 404)));
 
   app.get('/tools', (req, reply) => reply.redirect('/tools/', 301));
   app.get('/tools/', (req, reply) => html(reply, toolsIndex('en')));
@@ -297,7 +336,7 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
     reply.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\n\nSitemap: ${config.publicBaseUrl}/sitemap.xml\n`),
   );
   app.get('/sitemap.xml', (req, reply) => {
-    const paths = ['/', '/fr/', '/tools/', '/fr/outils/', ...TOOL_SLUGS.flatMap((k) => [toolPath('en', k), toolPath('fr', k)]), '/pricing', '/fr/tarifs', '/how-scoring-works', '/fr/calcul-du-score', '/privacy', '/fr/confidentialite', '/terms', '/fr/conditions', '/legal', '/fr/mentions-legales'];
+    const paths = ['/', '/fr/', '/tools/', '/fr/outils/', ...TOOL_SLUGS.flatMap((k) => [toolPath('en', k), toolPath('fr', k)]), '/pricing', '/fr/tarifs', '/how-scoring-works', '/fr/calcul-du-score', '/privacy', '/fr/confidentialite', '/terms', '/fr/conditions', '/legal', '/fr/mentions-legales', '/fr/guides/', ...GUIDES_FR.map((g) => `/fr/guides/${g.slug}`)];
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map((p) => `  <url><loc>${config.publicBaseUrl}${p}</loc></url>`).join('\n')}\n</urlset>\n`;
     return reply.type('application/xml').send(xml);
   });

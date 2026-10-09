@@ -240,3 +240,4 @@ th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; colo
 .fix-item { margin: 12px 0; }
 .fix-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .fix-item pre { white-space: pre-wrap; word-break: break-all; }
+.guide { padding-top: 40px; padding-bottom: 40px; }

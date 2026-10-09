@@ -68,6 +68,7 @@ ${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication
     <nav aria-label="Main">
       <a href="${lang === 'fr' ? '/fr/outils/' : '/tools/'}">${esc(t.nav.tools)}</a>
       <a href="${lang === 'fr' ? '/fr/tarifs' : '/pricing'}">${esc(t.nav.pricing)}</a>
+      ${lang === 'fr' ? '<a href="/fr/guides/">Guides</a>' : ''}
       <a href="${lang === 'fr' ? '/fr/calcul-du-score' : '/how-scoring-works'}">${esc(t.nav.scoring)}</a>
       <span class="lang-switch" role="group" aria-label="Language">${['en', 'fr'].map((l) => (l === lang ? `<span aria-current="true">${l.toUpperCase()}</span>` : `<a href="${esc(switchPath(l))}?lang=${l}" hreflang="${l}" rel="nofollow">${l.toUpperCase()}</a>`)).join('')}</span>
     </nav>

@@ -465,3 +465,17 @@ test('fixes and CSV export are part of the full report', async () => {
   assert.ok(csv.body.split('\r\n').length > 3);
   await beta.close();
 });
+
+test('French SEO guides: index, article page linked to its tool, in the sitemap', async () => {
+  const app = await makeApp();
+  const index = (await app.inject('/fr/guides/')).body;
+  assert.equal((index.match(/class="card link-card" href="\/fr\/guides\//g) || []).length, 6);
+  const guide = (await app.inject('/fr/guides/robots-txt')).body;
+  assert.match(guide, /"@type":"Article"/);
+  assert.match(guide, /href="\/fr\/outils\/verificateur-robots-txt"/);
+  assert.match(guide, /User-agent: \*/);
+  assert.match((await app.inject('/fr/outils/verificateur-robots-txt')).body, /href="\/fr\/guides\/robots-txt"/);
+  assert.match((await app.inject('/sitemap.xml')).body, /\/fr\/guides\/accelerer-site-web/);
+  assert.equal((await app.inject('/fr/guides/inconnu')).statusCode, 404);
+  await app.close();
+});

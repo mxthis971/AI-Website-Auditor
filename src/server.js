@@ -65,7 +65,11 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
   const ads = config.adsense?.client
     ? ' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google'
     : '';
-  const csp = `default-src 'self'; img-src 'self' https: data:; style-src 'self'${ads ? " 'unsafe-inline'" : ''}; script-src 'self'${ads}; connect-src 'self'${ads}; frame-src${ads || " 'none'"}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com`;
+  // Cloudflare Web Analytics: one script and one beacon endpoint, only when a site token is set.
+  const cfa = config.cloudflareAnalyticsToken;
+  const cfScript = cfa ? ' https://static.cloudflareinsights.com' : '';
+  const cfConnect = cfa ? ' https://cloudflareinsights.com' : '';
+  const csp = `default-src 'self'; img-src 'self' https: data:; style-src 'self'${ads ? " 'unsafe-inline'" : ''}; script-src 'self'${ads}${cfScript}; connect-src 'self'${ads}${cfConnect}; frame-src${ads || " 'none'"}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com`;
 
   // One public address for search engines: pages opened on the Render URL (*.onrender.com)
   // are sent to the custom domain. API calls (health checks, webhooks) are left alone.

@@ -38,6 +38,9 @@ services:
         sync: false
       - key: GOOGLE_SITE_VERIFICATION
         value: fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA
+      # Cloudflare Web Analytics site token (public, 32 hex chars). Empty = no analytics.
+      - key: CLOUDFLARE_ANALYTICS_TOKEN
+        sync: false
       - key: TURSO_DATABASE_URL
         sync: false
       - key: TURSO_AUTH_TOKEN

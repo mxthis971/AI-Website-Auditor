@@ -60,6 +60,7 @@ ${jsonLd ? `<script type="application/ld+json">${jsonForHtml(jsonLd)}</script>` 
 <script type="application/json" id="page-data">${jsonForHtml({ lang, ui: t, ads: adsData(config), ...(pageData || {}) })}</script>
 <script src="/static/js/app.js?v=${JS_V}" defer></script>
 ${config.adsense?.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(config.adsense.client)}" crossorigin="anonymous"></script>` : ''}
+${config.cloudflareAnalyticsToken ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${esc(JSON.stringify({ token: config.cloudflareAnalyticsToken }))}'></script>` : ''}
 </head>
 <body>
 <header class="site-header">

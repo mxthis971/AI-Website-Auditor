@@ -53,6 +53,8 @@ export function loadConfig(overrides = {}) {
       reportSlot: /^\d{5,20}$/.test(process.env.ADSENSE_REPORT_SLOT || '') ? process.env.ADSENSE_REPORT_SLOT : '',
       toolSlot: /^\d{5,20}$/.test(process.env.ADSENSE_TOOL_SLOT || '') ? process.env.ADSENSE_TOOL_SLOT : '',
     },
+    // Cloudflare Web Analytics site token (public, shown in the page). Cookie-free visitor stats; off when empty.
+    cloudflareAnalyticsToken: /^[a-f0-9]{32}$/i.test((process.env.CLOUDFLARE_ANALYTICS_TOKEN || '').trim()) ? process.env.CLOUDFLARE_ANALYTICS_TOKEN.trim() : '',
     // Google Search Console ownership token (public value, shown in a <meta> tag).
     googleSiteVerification: /^[\w-]{20,100}$/.test(process.env.GOOGLE_SITE_VERIFICATION || '') ? process.env.GOOGLE_SITE_VERIFICATION : '',
     contactEmail: /^[^\s@<>"]+@[^\s@<>"]+\.[a-z]{2,}$/i.test(process.env.CONTACT_EMAIL || '') ? process.env.CONTACT_EMAIL : '',

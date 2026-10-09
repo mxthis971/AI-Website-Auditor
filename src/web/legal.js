@@ -31,6 +31,7 @@ export function legalPages(config) {
 <li><strong>IP addresses</strong> are used in memory only, to limit abuse (rate limiting). They are not written to our database or logs.</li>
 <li><strong>Payments</strong> (when enabled) are processed by Stripe. We never see or store card details; we only store a payment reference linked to the report.</li>
 <li><strong>Advertising cookies</strong>: pages show ads from Google AdSense. Google may use cookies to show and measure ads; in the EU/UK they are only used for personalised ads if you consent through the consent banner. See <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">how Google uses data from partner sites</a>.</li>
+<li><strong>Visitor statistics</strong>: we count visits with Cloudflare Web Analytics, which uses no cookies and does not track you across sites. It measures page views, referring sites and page speed, aggregated.</li>
 <li><strong>Language cookie</strong>: a <code>lang</code> cookie (1 year) remembers whether you prefer English or French. It contains nothing else and is not used for tracking.</li>
 <li><strong>Local storage</strong>: your browser keeps the private key that lets you delete your own reports; it never leaves your device except when you use it.</li>
 </ul>
@@ -57,6 +58,7 @@ export function legalPages(config) {
 <li><strong>Les adresses IP</strong> sont utilisées uniquement en mémoire pour limiter les abus. Elles ne sont écrites ni en base de données ni dans les journaux.</li>
 <li><strong>Les paiements</strong> (lorsqu’ils sont activés) sont traités par Stripe. Nous ne voyons ni ne stockons jamais les données de carte ; seule une référence de paiement est liée au rapport.</li>
 <li><strong>Cookies publicitaires</strong> : les pages affichent des annonces Google AdSense. Google peut utiliser des cookies pour afficher et mesurer les annonces ; dans l’UE, les annonces personnalisées ne sont utilisées qu’avec votre accord via la bannière de consentement. Voir <a href="https://policies.google.com/technologies/partner-sites?hl=fr" rel="noopener">comment Google utilise les données des sites partenaires</a>.</li>
+<li><strong>Statistiques de visite</strong> : nous comptons les visites avec Cloudflare Web Analytics, qui n’utilise aucun cookie et ne vous suit pas d’un site à l’autre. Il mesure de façon agrégée les pages vues, les sites d’origine et la vitesse des pages.</li>
 <li><strong>Cookie de langue</strong> : un cookie <code>lang</code> (1 an) retient si vous préférez le français ou l’anglais. Il ne contient rien d’autre et ne sert pas au suivi.</li>
 <li><strong>Stockage local</strong> : votre navigateur conserve la clé privée qui vous permet de supprimer vos rapports.</li>
 </ul>

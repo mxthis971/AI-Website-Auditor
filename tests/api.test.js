@@ -268,6 +268,22 @@ test('AdSense: script, CSP, ads.txt and report banner when configured', async ()
   await app.close();
 });
 
+test('Cloudflare Web Analytics: beacon and CSP only when a token is set', async () => {
+  const off = await makeApp();
+  const plain = await off.inject('/');
+  assert.doesNotMatch(plain.body, /cloudflareinsights/);
+  assert.doesNotMatch(plain.headers['content-security-policy'], /cloudflareinsights/);
+  await off.close();
+  const app = await makeApp({ config: { cloudflareAnalyticsToken: '0123456789abcdef0123456789abcdef' } });
+  for (const url of ['/', '/fr/', '/fr/guides/']) {
+    const res = await app.inject(url);
+    assert.match(res.body, /<script defer src="https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js" data-cf-beacon='\{&quot;token&quot;:&quot;0123456789abcdef0123456789abcdef&quot;\}'><\/script>/);
+    assert.match(res.headers['content-security-policy'], /script-src 'self' https:\/\/static\.cloudflareinsights\.com;/);
+    assert.match(res.headers['content-security-policy'], /connect-src 'self' https:\/\/cloudflareinsights\.com;/);
+  }
+  await app.close();
+});
+
 test('Search Console verification tag is on every page when configured', async () => {
   const app = await makeApp({ config: { googleSiteVerification: 'fNjVqyjB8GHfwjI-3BhX8GqGn4vTqUeeVGNoQnANeFA' } });
   for (const url of ['/', '/fr/', '/tools/', '/pricing']) {

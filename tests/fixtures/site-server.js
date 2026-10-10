@@ -30,7 +30,7 @@ export function defaultRoutes() {
     '/about': () => ({ body: page({ title: 'About us | Fixture', head: '<link rel="canonical" href="/about">', body: `<h1>About</h1><h4>Skipped level</h4><p>${words(250)}</p><a href="/">Home</a>` }) }),
     '/no-h1': () => ({ body: page({ title: null, description: null, body: `<p>${words(50)}</p><p>lorem ipsum dolor sit amet</p>` }) }),
     '/multi-h1': () => ({ body: page({ title: 'Multi H1 page | Fixture', body: `<h1>One</h1><h1>Two</h1><p>${words(220)}</p>` }) }),
-    '/privacy': () => ({ body: page({ title: 'Privacy policy | Fixture', body: `<h1>Privacy</h1><p>${words(230)}</p>` }) }),
+    '/privacy': () => ({ body: page({ title: 'Privacy policy | Fixture', body: `<h1>Privacy</h1><p>${words(60)}</p>` }) }),
     '/fr/': () => ({
       body: page({
         lang: 'fr',

@@ -67,6 +67,10 @@ test('detects HTTP (no HTTPS), lorem ipsum and thin content', () => {
   for (const id of ['https-missing', 'lorem-ipsum', 'thin-content']) assert.ok(found.has(id), id);
 });
 
+test('short legal pages are not reported as thin content', () => {
+  assert.ok(!issue(report, 'thin-content').affected.some((a) => a.url.endsWith('/privacy')));
+});
+
 test('robots.txt and sitemap present: no false positives', () => {
   const found = ids(report);
   assert.ok(!found.has('robots-txt-missing'));

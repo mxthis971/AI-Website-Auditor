@@ -76,7 +76,7 @@ export function legalPages(config) {
       lang: 'en',
       alternates: termsAlt,
       title: 'Terms of Use · Auditeur SEO',
-      description: 'Terms of use of Auditeur SEO.',
+      description: 'Terms of use of Auditeur SEO: what the automated website audit provides, its limits, acceptable use and the crawler rules.',
       body: `<h1>Terms of use</h1>
 <p>Auditeur SEO provides automated technical audits of public websites. Results are generated automatically and may contain errors; they are recommendations, not guarantees of ranking, traffic or revenue.</p>
 <p>Only audit websites you own or are authorised to analyse. Automated abuse (mass scanning, attempts to reach private networks) is forbidden and blocked.</p>
@@ -89,7 +89,7 @@ export function legalPages(config) {
       lang: 'fr',
       alternates: termsAlt,
       title: 'Conditions d’utilisation · Auditeur SEO',
-      description: 'Conditions d’utilisation d’Auditeur SEO.',
+      description: 'Conditions d’utilisation d’Auditeur SEO : ce que fournit l’audit automatisé, ses limites, les usages autorisés et les règles du robot.',
       body: `<h1>Conditions d’utilisation</h1>
 <p>Auditeur SEO fournit des audits techniques automatisés de sites publics. Les résultats sont générés automatiquement et peuvent contenir des erreurs ; ce sont des recommandations, sans garantie de positionnement, de trafic ou de chiffre d’affaires.</p>
 <p>N’auditez que des sites dont vous êtes propriétaire ou que vous êtes autorisé à analyser. Les usages abusifs (scans massifs, tentatives d’accès à des réseaux privés) sont interdits et bloqués.</p>
@@ -102,7 +102,7 @@ export function legalPages(config) {
       lang: 'en',
       alternates: legalAlt,
       title: 'Legal Notice · Auditeur SEO',
-      description: 'Publisher and hosting information.',
+      description: 'Legal notice of Auditeur SEO: publisher, publication director, contact address and website hosting provider.',
       body: `<h1>Legal notice</h1><p>Website: ${SITE}.</p><p>Publisher and publication director: ${PUBLISHER}, based in Guadeloupe, France.${email ? ` ${contactEn}` : ''}</p><p>Hosting: ${HOST}.</p>`,
     },
     {
@@ -110,7 +110,7 @@ export function legalPages(config) {
       lang: 'fr',
       alternates: legalAlt,
       title: 'Mentions légales · Auditeur SEO',
-      description: 'Informations sur l’éditeur et l’hébergeur.',
+      description: 'Mentions légales d’Auditeur SEO : éditeur, directeur de la publication, adresse de contact et hébergeur du site.',
       body: `<h1>Mentions légales</h1><p>Site : ${SITE}.</p><p>Éditeur et directeur de la publication : ${PUBLISHER}, domicilié en Guadeloupe, France.${email ? ` ${contactFr}` : ''}</p><p>Hébergeur : ${HOST_FR}.</p>`,
     },
   ];

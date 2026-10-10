@@ -21,6 +21,40 @@ const STEP_ICONS = [
   icon('<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>'),
 ];
 
+// Short FAQs: answer the questions visitors ask before running a scan or paying.
+const HOME_FAQ = {
+  en: [
+    ['Is the audit really free?', 'Yes. The scan, the score and the list of issues are free, with no signup and no credit card. During the beta, explanations, ready-to-paste fixes and the CSV export are unlocked too.'],
+    ['Which websites can I scan?', 'Any public website you own or are allowed to analyse: a WordPress, Shopify, Wix or hand-coded site. The scanner only reads public pages, like a search engine would.'],
+    ['How long does a scan take?', 'Usually under a minute. The scanner visits up to {pages} pages, checks links and measures the homepage resources, then computes the score.'],
+    ['Is the score reliable?', 'The score comes from deterministic rules: the same site gives the same result every time. Each rule and its weight are described on the scoring page, so you can check how it was calculated.'],
+  ],
+  fr: [
+    ['L’audit est-il vraiment gratuit ?', 'Oui. L’analyse, le score et la liste des problèmes sont gratuits, sans inscription ni carte bancaire. Pendant la bêta, les explications, les corrections prêtes à copier et l’export CSV sont aussi offerts.'],
+    ['Quels sites puis-je analyser ?', 'Tout site public dont vous êtes propriétaire ou que vous êtes autorisé à analyser : WordPress, Shopify, Wix ou site codé à la main. Le robot lit seulement les pages publiques, comme un moteur de recherche.'],
+    ['Combien de temps dure une analyse ?', 'En général moins d’une minute. Le robot visite jusqu’à {pages} pages, vérifie les liens et mesure les ressources de la page d’accueil, puis calcule le score.'],
+    ['Le score est-il fiable ?', 'Le score vient de règles déterministes : le même site donne toujours le même résultat. Chaque règle et son poids sont décrits sur la page de calcul du score, vous pouvez donc vérifier le calcul.'],
+  ],
+};
+const PRICING_FAQ = {
+  en: [
+    ['What is included for free?', 'Every scan gives the overall score, the five category scores and the list of issues found on your site. You can run as many scans as you like, within a fair-use limit.'],
+    ['What does the full report add?', 'The full report explains every issue with the affected URLs, gives ready-to-paste HTML fixes page by page, crawls up to 200 pages and lets you re-check the site for 30 days with a before/after comparison.'],
+    ['How do I pay?', 'Payments will go through Stripe, a secure payment provider: we never see your card number. Until sales open, every report stays free.'],
+    ['Do I need an account?', 'No. Each report has a private link. Keep it to come back to your report later.'],
+  ],
+  fr: [
+    ['Qu’est-ce qui est gratuit ?', 'Chaque analyse donne le score global, les scores des cinq catégories et la liste des problèmes trouvés sur votre site. Vous pouvez lancer autant d’analyses que vous voulez, dans une limite d’usage raisonnable.'],
+    ['Qu’apporte le rapport complet ?', 'Le rapport complet explique chaque problème avec les URL concernées, donne des corrections HTML prêtes à copier page par page, analyse jusqu’à 200 pages et permet de re-vérifier le site pendant 30 jours avec une comparaison avant/après.'],
+    ['Comment payer ?', 'Les paiements passeront par Stripe, un prestataire de paiement sécurisé : nous ne voyons jamais votre numéro de carte. Tant que les ventes ne sont pas ouvertes, tous les rapports restent gratuits.'],
+    ['Faut-il créer un compte ?', 'Non. Chaque rapport a un lien privé. Gardez-le pour revenir à votre rapport plus tard.'],
+  ],
+};
+const faqSection = (title, items) => `<section class="container narrow prose faq">
+  <h2>${esc(title)}</h2>
+  ${items.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n  ')}
+</section>`;
+
 export async function registerPages(app, { config, store, payments }) {
   const html = (reply, content, code = 200) => reply.code(code).type('text/html; charset=utf-8').send(content);
   const homeAlternates = [
@@ -53,7 +87,8 @@ export async function registerPages(app, { config, store, payments }) {
   <h2>${esc(t.checksTitle)}</h2>
   <ul class="checklist">${t.checks.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
   <p><a href="${lang === 'fr' ? '/fr/outils/' : '/tools/'}">${esc(t.nav.tools)} →</a> · <a href="${lang === 'fr' ? '/fr/calcul-du-score' : '/how-scoring-works'}">${esc(t.nav.scoring)} →</a></p>
-</section>`;
+</section>
+${faqSection(lang === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions', HOME_FAQ[lang].map(([q, a]) => [q, fill(a)]))}`;
     return layout({
       config,
       lang,
@@ -257,8 +292,9 @@ ${config.adsense?.client ? '<div class="container narrow" data-ad-placement="too
   <p class="lead center">${fr ? 'Commencez gratuitement. Payez seulement si le rapport vous est utile.' : 'Start free. Pay only if the report is useful to you.'}</p>
   <div class="cards three pricing">${plans.map((p) => `<div class="card plan"><h2 class="h3">${esc(p.name)}</h2><p class="price">${esc(p.price)}</p><ul class="checklist">${p.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>${p.cta}</div>`).join('')}</div>
   <p class="muted small center">${fr ? 'Prix TTC indicatifs, susceptibles d’évoluer. Aucun abonnement caché, annulation à tout moment.' : 'Indicative prices, subject to change. No hidden subscription, cancel anytime.'}</p>
-</section>`;
-    return layout({ config, lang, path: fr ? '/fr/tarifs' : '/pricing', title: fr ? 'Tarifs · Auditeur SEO' : 'Pricing · Auditeur SEO', description: fr ? 'Audit gratuit, rapport complet à l’unité, monitoring Pro.' : 'Free audit, one-time full report, Pro monitoring.', alternates: [{ lang: 'en', path: '/pricing' }, { lang: 'fr', path: '/fr/tarifs' }], body, pageData: { page: 'pricing' } });
+</section>
+${faqSection(fr ? 'Questions fréquentes' : 'Frequently asked questions', PRICING_FAQ[lang])}`;
+    return layout({ config, lang, path: fr ? '/fr/tarifs' : '/pricing', title: fr ? 'Tarifs · Auditeur SEO' : 'Pricing · Auditeur SEO', description: fr ? 'Audit SEO gratuit, rapport complet à 7,90 € une fois avec corrections prêtes à copier, et bientôt un suivi Pro mensuel.' : 'Free SEO audit, a one-time full report at €7.90 with ready-to-paste fixes, and Pro monthly monitoring coming soon.', alternates: [{ lang: 'en', path: '/pricing' }, { lang: 'fr', path: '/fr/tarifs' }], body, pageData: { page: 'pricing' } });
   };
   app.get('/pricing', (req, reply) => html(reply, pricing('en')));
   app.get('/fr/tarifs', (req, reply) => html(reply, pricing('fr')));

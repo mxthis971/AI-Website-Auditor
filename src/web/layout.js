@@ -35,6 +35,10 @@ export function layout({ config, lang = 'en', title, description, path, body, al
   const home = lang === 'fr' ? '/fr/' : '/';
   // The EN/FR switch goes to the same page in the other language when it exists.
   const switchPath = (l) => (alternates || []).find((a) => a.lang === l)?.path || (l === 'fr' ? '/fr/' : '/');
+  // Every multilingual page gets an x-default (English version, else the only one).
+  if (alternates?.length && !alternates.some((a) => a.lang === 'x-default')) {
+    alternates = [...alternates, { lang: 'x-default', path: (alternates.find((a) => a.lang === 'en') || alternates[0]).path }];
+  }
   const legal = lang === 'fr' ? { privacy: '/fr/confidentialite', terms: '/fr/conditions', legal: '/fr/mentions-legales' } : { privacy: '/privacy', terms: '/terms', legal: '/legal' };
   return `<!doctype html>
 <html lang="${lang}">

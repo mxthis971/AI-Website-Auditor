@@ -114,8 +114,9 @@ export async function crawlSite(input, { config, onProgress = () => {}, resolver
   const queue = [];
   const blockedByRobots = [];
   const addPage = (url, response, depth, error = null) => {
-    // Two links may redirect to the same final page: analyse it only once.
-    if (response && response.url !== url && pages.some((p) => p.finalUrl === response.url)) {
+    // Two links may lead to the same final page (e.g. "/fr/" and "/fr/?lang=fr"
+    // redirecting to it), fetched in parallel in any order: analyse it only once.
+    if (response && pages.some((p) => p.finalUrl === response.url)) {
       return null;
     }
     if (response) queued.add(response.url);

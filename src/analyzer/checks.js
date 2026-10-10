@@ -2,6 +2,8 @@
 // "failed" (with the affected URLs) or "passed". No AI here: everything is
 // measurable and reproducible. Human-readable texts live in catalog.js.
 
+import { siteKey } from './page.js';
+
 export const LIMITS = {
   titleMin: 15,
   titleMax: 60,
@@ -181,8 +183,19 @@ export function runChecks(site, { pagespeed = null } = {}) {
 
   const uncompressed = [];
   if (home && home.htmlBytes > 2048 && !home.headers['content-encoding']) uncompressed.push({ url: home.finalUrl, detail: 'HTML' });
+  // Only the site's own files: a third-party script (ads, analytics) is not
+  // under the owner's control, and some CDNs omit Content-Encoding on HEAD.
+  const ownSite = siteKey(new URL(site.finalUrl).hostname);
+  const isOwn = (u) => {
+    try {
+      const host = siteKey(new URL(u).hostname);
+      return host === ownSite || host.endsWith(`.${ownSite}`);
+    } catch {
+      return false;
+    }
+  };
   for (const a of site.assets) {
-    if ((a.type === 'script' || a.type === 'stylesheet') && a.bytes > 2048 && !a.encoding) uncompressed.push({ url: a.url, detail: a.type });
+    if ((a.type === 'script' || a.type === 'stylesheet') && a.bytes > 2048 && !a.encoding && isOwn(a.url)) uncompressed.push({ url: a.url, detail: a.type });
   }
   add({ ...siteRule('compression-missing', uncompressed.length), count: uncompressed.length, affected: uncompressed });
 
@@ -226,7 +239,9 @@ export function runChecks(site, { pagespeed = null } = {}) {
   add(perPage('positive-tabindex', site, (f) => (f.positiveTabindex ? `${f.positiveTabindex} element(s)` : false)));
 
   // -------------------------------------------------------------- Content
-  add(perPage('thin-content', site, (f) => (f.wordCount < LIMITS.thinContentWords ? `${f.wordCount} words` : false)));
+  // Legal and contact pages are short by nature: they are not counted as thin content.
+  const shortByNature = /\/(privacy|confidentialite|terms|conditions|cgu|cgv|legal|mentions-legales|imprint|impressum|datenschutz|contact)(\/|\.html?)?$/i;
+  add(perPage('thin-content', site, (f, page) => (f.wordCount < LIMITS.thinContentWords && !shortByNature.test(new URL(page.finalUrl).pathname) ? `${f.wordCount} words` : false)));
   add(perPage('lorem-ipsum', site, (f) => f.hasLoremIpsum));
   const legalPattern = /privacy|confidentialit|mentions[\s-]l[ée]gales|legal|imprint|impressum|terms|cgu|cgv|datenschutz/i;
   const hasLegal = pages.some((p) => p.facts.links.some((l) => legalPattern.test(l.text) || legalPattern.test(l.href)));

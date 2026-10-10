@@ -82,7 +82,10 @@ export async function buildApp({ config = loadConfig(), store, resolver, aiClien
     });
   }
 
+  // HSTS: browsers then always use HTTPS for this domain (only sent when the site is served over HTTPS).
+  const hsts = config.publicBaseUrl.startsWith('https:');
   app.addHook('onSend', async (req, reply, payload) => {
+    if (hsts) reply.header('strict-transport-security', 'max-age=31536000');
     reply.header('x-content-type-options', 'nosniff');
     reply.header('referrer-policy', 'strict-origin-when-cross-origin');
     reply.header('x-frame-options', 'DENY');

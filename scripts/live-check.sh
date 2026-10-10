@@ -22,7 +22,7 @@ if [ "${1:-}" = deployed ]; then
   echo "--- Google + Cloudflare tags on /"; curl -sS -m 30 "$BASE_URL/" | grep -oE '<meta name="google-site-verification"[^>]*>|<script async src="https://pagead2[^"]*"|data-cf-beacon=[^>]*>' || echo "(none)"
   echo "--- ads.txt"; curl -sS -m 30 "$BASE_URL/ads.txt"; echo
   echo "--- audit through the API"
-  res=$(curl -sS -m 30 -H 'content-type: application/json' -d '{"url":"https://example.com"}' "$BASE_URL/api/audits")
+  res=$(curl -sS -m 30 -H 'content-type: application/json' -d "{\"url\":\"${AUDIT_URL:-https://example.com}\"}" "$BASE_URL/api/audits")
   echo "$res"
   id=$(echo "$res" | jq -r '.id // empty')
   [ -n "$id" ] || exit 1
@@ -34,6 +34,7 @@ if [ "${1:-}" = deployed ]; then
   echo "$st"
   curl -sS -o /dev/null -w "report page /r/$id -> %{http_code}\n" "$BASE_URL/r/$id"
   curl -sS -m 30 "$BASE_URL/api/reports/$id?lang=fr" | jq -c '{score: .score.overall, issues: (.issues | length), fixesCount, deep}'
+  curl -sS -m 30 "$BASE_URL/api/reports/$id" | summarise
   exit 0
 fi
 

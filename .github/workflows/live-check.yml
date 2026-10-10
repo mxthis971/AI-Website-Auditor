@@ -8,6 +8,9 @@ on:
       base_url:
         description: Deployed site
         default: https://auditeur-seo.fr
+      audit_url:
+        description: Site audited through the deployed API
+        default: https://example.com
   push:
     branches: ['claude/**']
     paths: ['.github/workflows/live-check.yml', 'scripts/live-check.sh', 'src/**']
@@ -22,6 +25,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     env:
       BASE_URL: ${{ inputs.base_url || 'https://auditeur-seo.fr' }}
+      AUDIT_URL: ${{ inputs.audit_url || 'https://example.com' }}
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/live-check.sh deployed

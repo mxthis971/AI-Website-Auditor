@@ -7,7 +7,7 @@ export const GUIDES_FR = [
   {
     slug: 'balise-title',
     tool: 'meta-tag-checker',
-    title: 'Balise title : comment écrire un bon titre de page (avec exemples)',
+    title: 'Balise title : écrire un bon titre de page (exemples)',
     h1: 'Balise title : écrire un titre de page qui donne envie de cliquer',
     description: 'Longueur idéale, place du mot-clé, nom de marque, erreurs fréquentes : la méthode simple pour écrire la balise title de chaque page.',
     intro: 'La balise title est le texte bleu cliquable que Google affiche dans ses résultats. C’est souvent la première chose qu’un internaute lit de votre site : elle doit dire en quelques mots ce que contient la page.',
@@ -86,7 +86,7 @@ export const GUIDES_FR = [
   {
     slug: 'robots-txt',
     tool: 'robots-txt-checker',
-    title: 'Fichier robots.txt : à quoi il sert et comment l’écrire sans erreur',
+    title: 'Fichier robots.txt : à quoi il sert, comment l’écrire',
     h1: 'robots.txt : dire aux moteurs de recherche où ils peuvent aller',
     description: 'Le rôle du fichier robots.txt, sa syntaxe (User-agent, Disallow, Sitemap), un modèle prêt à l’emploi et l’erreur qui peut faire disparaître un site de Google.',
     intro: 'Le fichier robots.txt est un petit fichier texte placé à la racine de votre site. Il indique aux robots des moteurs de recherche les parties du site qu’ils peuvent explorer et celles qu’ils doivent ignorer.',
@@ -128,7 +128,7 @@ Disallow: /</code></pre>
   {
     slug: 'sitemap-xml',
     tool: 'sitemap-checker',
-    title: 'Sitemap XML : créer et déclarer le plan de votre site à Google',
+    title: 'Sitemap XML : créer et déclarer le plan de votre site',
     h1: 'Sitemap XML : donner à Google la liste de vos pages',
     description: 'Ce qu’est un sitemap XML, à quoi il ressemble, comment le générer (WordPress, Shopify, Wix…) et le déclarer dans Google Search Console.',
     intro: 'Un sitemap XML est la liste des pages de votre site que vous voulez voir dans Google. Image simple : c’est le plan du centre commercial que l’on donne au visiteur à l’entrée, pour qu’il ne rate aucune boutique.',
@@ -210,7 +210,7 @@ Disallow: /</code></pre>
   {
     slug: 'accelerer-site-web',
     tool: 'website-speed-checker',
-    title: 'Accélérer un site web : 8 actions concrètes pour gagner en vitesse',
+    title: 'Accélérer un site web : 8 actions concrètes et efficaces',
     h1: 'Accélérer son site web : 8 actions concrètes, de la plus simple à la plus technique',
     description: 'Images trop lourdes, scripts bloquants, compression, cache, hébergement : les actions qui accélèrent réellement un site et améliorent les Core Web Vitals.',
     intro: 'Un site lent fait perdre des visiteurs, surtout sur mobile. Google tient aussi compte de l’expérience de chargement (les « Core Web Vitals »). Bonne nouvelle : les gains les plus importants viennent souvent des corrections les plus simples.',

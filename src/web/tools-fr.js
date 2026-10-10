@@ -6,8 +6,8 @@ export const TOOLS_FR = {
     slug: 'verificateur-balises-meta',
     name: 'Vérificateur de balises meta',
     h1: 'Vérificateur de balises meta gratuit',
-    title: 'Vérificateur de balises meta : title, description, canonical et robots',
-    description: 'Vérifiez en quelques secondes la balise title, la meta description, la canonical, les balises robots et viewport de n’importe quelle page. Gratuit, sans inscription.',
+    title: 'Vérificateur de balises meta : title, description, robots',
+    description: 'Vérifiez en quelques secondes la balise title, la meta description, la canonical et les balises robots d’une page. Gratuit, sans inscription.',
     intro: 'Collez une URL pour voir exactement ce que les moteurs de recherche lisent dans le <head> de la page : title, meta description, URL canonique, directives robots, viewport et langue. Chaque problème est accompagné d’une explication et d’une correction prête à copier.',
     sections: [
       ['Pourquoi les balises meta comptent toujours', 'La balise title est le titre cliquable dans Google et l’un des signaux les plus forts de la page. La meta description ne change pas le classement, mais c’est l’argumentaire affiché sous ce titre : une bonne description peut nettement augmenter le taux de clic. Les balises canonical et robots décident si la page est indexée : une seule valeur erronée peut la faire disparaître des résultats.'],
@@ -24,7 +24,7 @@ export const TOOLS_FR = {
     slug: 'verificateur-robots-txt',
     name: 'Vérificateur robots.txt',
     h1: 'Vérificateur de robots.txt',
-    title: 'Vérificateur robots.txt : trouvez les règles qui bloquent Google',
+    title: 'Vérificateur robots.txt : les règles qui bloquent Google',
     description: 'Téléchargez et testez votre robots.txt : détection de « Disallow: / », des pages bloquées et de la ligne Sitemap manquante. Gratuit et immédiat.',
     intro: 'Cet outil télécharge votre robots.txt, l’interprète comme les robots des moteurs de recherche (RFC 9309 : la règle la plus précise l’emporte, Allow l’emporte en cas d’égalité) et le teste sur les pages liées depuis votre page d’accueil.',
     sections: [
@@ -42,7 +42,7 @@ export const TOOLS_FR = {
     slug: 'verificateur-sitemap',
     name: 'Vérificateur de sitemap',
     h1: 'Vérificateur de sitemap XML',
-    title: 'Vérificateur de sitemap XML : trouvez et validez votre sitemap.xml',
+    title: 'Vérificateur de sitemap XML : validez votre sitemap.xml',
     description: 'Trouvez votre sitemap XML (robots.txt, /sitemap.xml, /sitemap_index.xml), validez son format et comptez ses URL. Gratuit.',
     intro: 'Nous cherchons votre sitemap là où les robots le cherchent : la ligne Sitemap du robots.txt, puis /sitemap.xml et /sitemap_index.xml. Nous vérifions qu’il s’agit d’un vrai sitemap XML (urlset ou sitemapindex) et comptons les URL listées.',
     sections: [
@@ -59,7 +59,7 @@ export const TOOLS_FR = {
     slug: 'verificateur-titres-h1-h2',
     name: 'Vérificateur de titres H1-H6',
     h1: 'Vérificateur de titres H1 à H6',
-    title: 'Vérificateur de titres : analysez la structure H1, H2, H3 d’une page',
+    title: 'Vérificateur de titres : structure H1, H2, H3 d’une page',
     description: 'Affichez le plan H1 à H6 complet d’une page, trouvez les H1 manquants ou multiples et les niveaux sautés. Contrôle SEO et accessibilité gratuit.',
     intro: 'Les titres sont la table des matières d’une page. Cet outil extrait chaque titre dans l’ordre pour que vous voyiez le plan exactement comme les lecteurs d’écran et les moteurs de recherche.',
     sections: [
@@ -75,7 +75,7 @@ export const TOOLS_FR = {
     slug: 'verificateur-open-graph',
     name: 'Vérificateur Open Graph',
     h1: 'Vérificateur Open Graph et aperçu de partage',
-    title: 'Vérificateur Open Graph : voyez l’aperçu de votre lien quand il est partagé',
+    title: 'Vérificateur Open Graph : l’aperçu de votre lien partagé',
     description: 'Vérifiez og:title, og:description, og:image et les balises Twitter Card, et prévisualisez la carte de partage. Gratuit, sans inscription.',
     intro: 'Quand quelqu’un partage votre lien sur LinkedIn, Facebook, WhatsApp, Slack ou X, ces plateformes lisent les balises Open Graph pour construire la carte d’aperçu. Cet outil montre ce qu’elles lisent et ce qui manque.',
     sections: [
@@ -90,8 +90,8 @@ export const TOOLS_FR = {
     slug: 'verificateur-attribut-alt',
     name: 'Vérificateur d’attributs alt',
     h1: 'Vérificateur d’attributs alt et SEO des images',
-    title: 'Vérificateur d’attributs alt : trouvez les alt manquants et les images trop lourdes',
-    description: 'Listez chaque image d’une page avec son texte alternatif, son poids et son format. Trouvez les attributs alt manquants, les fichiers trop lourds et les risques de décalage (CLS). Gratuit.',
+    title: 'Vérificateur alt : alt manquants et images trop lourdes',
+    description: 'Listez les images d’une page avec leur texte alternatif, leur poids et leur format : alt manquants, fichiers trop lourds, risques de décalage. Gratuit.',
     intro: 'Cet outil liste les images d’une page, signale les textes alternatifs manquants (accessibilité et Google Images), mesure le poids des fichiers et repère les images sans largeur ni hauteur qui font sauter la mise en page.',
     sections: [
       ['Bien écrire un texte alternatif', 'Décrivez ce que montre l’image et pourquoi elle est là, en une phrase courte. « Artisan cousant un sac en cuir » vaut mieux que « image1.jpg » ou une liste de mots-clés. Les images purement décoratives doivent avoir alt="" pour que les lecteurs d’écran les ignorent.'],
@@ -105,8 +105,8 @@ export const TOOLS_FR = {
     slug: 'verificateur-liens-casses',
     name: 'Vérificateur de liens cassés',
     h1: 'Vérificateur de liens cassés',
-    title: 'Vérificateur de liens cassés : trouvez les liens 404 et les chaînes de redirection',
-    description: 'Analysez une page et les pages vers lesquelles elle pointe : liens cassés (404, 500), liens externes morts et chaînes de redirection. Vérification gratuite en ligne.',
+    title: 'Vérificateur de liens cassés : liens 404 et redirections',
+    description: 'Analysez une page et ses liens : liens cassés (404, 500), liens externes morts et chaînes de redirection. Vérification gratuite en ligne.',
     intro: 'Nous suivons les liens de votre page (et de quelques pages derrière elle), demandons chaque cible et signalons celles qui finissent en erreur, ainsi que les liens qui passent par plusieurs redirections.',
     sections: [
       ['Pourquoi les liens cassés font du tort', 'Chaque lien mort est un visiteur qui se heurte à un mur, et du temps d’exploration gaspillé pour les moteurs de recherche. Sur une page produit ou de contact, c’est du chiffre d’affaires perdu.'],
@@ -120,8 +120,8 @@ export const TOOLS_FR = {
     slug: 'test-vitesse-site',
     name: 'Test de vitesse de site',
     h1: 'Test de vitesse de site web',
-    title: 'Test de vitesse de site : temps de réponse, poids de page et scripts bloquants',
-    description: 'Mesurez le temps de réponse du serveur, le poids de la page, les images lourdes, la compression et les scripts bloquants de n’importe quelle page. Test gratuit avec corrections.',
+    title: 'Test de vitesse de site : temps de réponse et poids de page',
+    description: 'Mesurez le temps de réponse du serveur, le poids de la page, les images lourdes, la compression et les scripts bloquants. Test gratuit.',
     intro: 'Ce test mesure ce qui peut l’être précisément depuis un serveur : temps de réponse, poids de la page et de chaque ressource, compression, cache et scripts qui bloquent l’affichage. Quand c’est configuré, les Core Web Vitals viennent de Google PageSpeed Insights.',
     sections: [
       ['Ce qui ralentit la plupart des sites', 'Par ordre de fréquence : des images trop lourdes, un hébergement lent sans cache de page, trop de scripts tiers (widgets de chat, traceurs) et l’absence de compression.'],

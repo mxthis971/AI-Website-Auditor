@@ -9,7 +9,7 @@ export const TOOLS = {
     crawl: { maxPages: 1 },
     name: 'Meta Tag Checker',
     h1: 'Free Meta Tag Checker',
-    title: 'Free Meta Tag Checker: Title, Description, Canonical & Robots',
+    title: 'Meta Tag Checker: Title, Description, Canonical, Robots',
     description: 'Check the title tag, meta description, canonical, robots and viewport tags of any page in seconds. Free, no signup, with clear fixes.',
     intro: 'Paste a URL to see exactly what search engines read in the <head> of the page: title, meta description, canonical URL, robots directives, viewport and language. Every problem comes with an explanation and a copy-paste fix.',
     sections: [
@@ -85,7 +85,7 @@ export const TOOLS = {
     h1: 'Open Graph & Social Preview Checker',
     title: 'Open Graph Checker: Preview How Your Link Looks When Shared',
     description: 'Check og:title, og:description, og:image and Twitter card tags, and preview your social share card. Free, no signup.',
-    intro: 'When someone shares your link on LinkedIn, Facebook, WhatsApp, Slack or X, these platforms read Open Graph tags to build the preview card. This tool shows what they read and what is missing.',
+    intro: 'When someone shares your link on LinkedIn, Facebook, WhatsApp, Slack or X, these platforms read Open Graph tags to build the preview card. This tool shows what they read and what is missing, so you can fix the tags before you share the page.',
     sections: [
       ['The three tags that matter', 'og:title (a short headline), og:description (one sentence), og:image (1200×630 px, under 5 MB, absolute https URL). Add twitter:card="summary_large_image" to get a large image on X.'],
       ['Why previews fail', 'Relative image URLs, images blocked by robots.txt, or caches on the social platform that still hold an old version (use each platform’s debugger to refresh).'],
@@ -100,7 +100,7 @@ export const TOOLS = {
     crawl: { maxPages: 1 },
     name: 'Image Alt Text Checker',
     h1: 'Image Alt Text & Image SEO Checker',
-    title: 'Image Alt Text Checker: Find Missing Alt Attributes and Heavy Images',
+    title: 'Image Alt Text Checker: Missing Alt and Heavy Images',
     description: 'List every image on a page with its alt text, size and format. Find missing alt attributes, oversized files and CLS risks. Free.',
     intro: 'This tool lists the images of a page, flags missing alt text (accessibility and Google Images), measures file sizes, and spots images without width/height that make the layout jump.',
     sections: [
@@ -133,7 +133,7 @@ export const TOOLS = {
     crawl: { maxPages: 1 },
     name: 'Website Speed Checker',
     h1: 'Website Speed Checker',
-    title: 'Website Speed Checker: Server Response, Page Weight & Render Blocking',
+    title: 'Website Speed Checker: Server Response and Page Weight',
     description: 'Measure server response time, page weight, heavy images, compression and render-blocking scripts of any page. Free speed test with fixes.',
     intro: 'This speed check measures what can be measured precisely from a server: response time, the weight of the page and each resource, compression, caching and scripts that block rendering. When configured, Core Web Vitals come from Google PageSpeed Insights.',
     sections: [

@@ -419,7 +419,19 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     await app.close();
     process.exit(0);
   };
-  process.on('SIGTERM', shutdown);
+  process.on('SIGTERM', () => {
+    app.log.warn({ uptimeSec: Math.round(process.uptime()) }, 'SIGTERM received (restart or redeploy by the host)');
+    shutdown();
+  });
   process.on('SIGINT', shutdown);
+  // A forgotten promise error must not kill the whole site (Node stops on it by default).
+  process.on('unhandledRejection', (err) => app.log.error({ err: err?.stack || String(err) }, 'unhandled promise rejection'));
+  // Render free = 512 MB: leave a trace in the logs before an out-of-memory kill.
+  const memWatch = setInterval(() => {
+    const rssMb = Math.round(process.memoryUsage().rss / 1048576);
+    if (rssMb > 400) app.log.warn({ rssMb, audits: app.queue.size }, 'high memory use');
+  }, 30_000);
+  memWatch.unref();
   await app.listen({ port: config.port, host: config.host });
+  app.log.info({ bootMs: Math.round(process.uptime() * 1000), storage: app.store.kind }, 'server ready');
 }
